@@ -14,15 +14,14 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "@repo/ui": "workspace:*",
     "@tailwindcss/vite": "^4.3.3",
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "tailwindcss": "^4.3.3"
   },
   "devDependencies": {
-    "@repo/eslint-config": "workspace:*",
-    "@repo/typescript-config": "workspace:*",
+    "@toggle-ctrl/eslint-config": "workspace:*",
+    "@toggle-ctrl/typescript-config": "workspace:*",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.5",
     "@vitejs/plugin-react": "6.1.1",

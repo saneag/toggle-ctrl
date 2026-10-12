@@ -56,7 +56,7 @@ importers:
       "@nestjs/testing":
         specifier: ^12.0.1
         version: 12.1.2(@nestjs/common@12.1.2(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))(@nestjs/core@12.1.2)(@nestjs/platform-express@12.1.2)
-      "@repo/eslint-config":
+      "@toggle-ctrl/eslint-config":
         specifier: workspace:*
         version: link:../../packages/eslint-config
       "@types/express":
@@ -98,9 +98,6 @@ importers:
 
   apps/web:
     dependencies:
-      "@repo/ui":
-        specifier: workspace:*
-        version: link:../../packages/ui
       "@tailwindcss/vite":
         specifier: ^4.3.3
         version: 4.3.3(vite@8.2.2(@types/node@24.19.2)(jiti@2.7.0))
@@ -114,10 +111,10 @@ importers:
         specifier: ^4.3.3
         version: 4.3.3
     devDependencies:
-      "@repo/eslint-config":
+      "@toggle-ctrl/eslint-config":
         specifier: workspace:*
         version: link:../../packages/eslint-config
-      "@repo/typescript-config":
+      "@toggle-ctrl/typescript-config":
         specifier: workspace:*
         version: link:../../packages/typescript-config
       "@testing-library/jest-dom":
@@ -165,7 +162,7 @@ importers:
       "@nestjs/testing":
         specifier: ^12.0.1
         version: 12.1.2(@nestjs/common@12.1.2(reflect-metadata@0.2.2)(rxjs@7.8.2)(supports-color@7.2.0))(@nestjs/core@12.1.2)(@nestjs/platform-express@12.1.2)
-      "@repo/typescript-config":
+      "@toggle-ctrl/typescript-config":
         specifier: workspace:*
         version: link:../typescript-config
       "@types/node":
@@ -203,34 +200,6 @@ importers:
         version: 8.68.0(eslint@10.9.1(jiti@2.7.0)(supports-color@7.2.0))(supports-color@7.2.0)(typescript@6.0.3)
 
   packages/typescript-config: {}
-
-  packages/ui:
-    dependencies:
-      react:
-        specifier: 19.2.8
-        version: 19.2.8
-      react-dom:
-        specifier: 19.2.8
-        version: 19.2.8(react@19.2.8)
-    devDependencies:
-      "@repo/eslint-config":
-        specifier: workspace:*
-        version: link:../eslint-config
-      "@repo/typescript-config":
-        specifier: workspace:*
-        version: link:../typescript-config
-      "@types/react":
-        specifier: 19.2.18
-        version: 19.2.18
-      "@types/react-dom":
-        specifier: 19.2.5
-        version: 19.2.5(@types/react@19.2.18)
-      eslint:
-        specifier: 10.9.1
-        version: 10.9.1(jiti@2.7.0)(supports-color@7.2.0)
-      typescript:
-        specifier: 7.0.2
-        version: 7.0.2
 
 packages:
   "@acemir/cssom@0.9.31":
