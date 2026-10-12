@@ -1,0 +1,7 @@
+import type { INestApplication } from "@nestjs/common";
+
+export function configureCors(app: INestApplication): void {
+  app.enableCors({
+    origin: "http://localhost:3000",
+  });
+}
