@@ -31,6 +31,57 @@
 $ pnpm install
 ```
 
+## Local PostgreSQL and Prisma
+
+Use pnpm from the repository root to install workspace dependencies. Prisma 6 is
+used to support the `prisma-client-js` generator and the connection URL in
+`prisma/schema.prisma`. The schema has no application models or migrations yet.
+
+From `apps/api`, copy `.env.example` to `.env` and adjust the credentials for your
+local PostgreSQL installation:
+
+```bash
+cp .env.example .env
+```
+
+The example connection is:
+
+```ini
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/toggle-ctrl"
+```
+
+`.env` is ignored by Git; `.env.example` is the committed local-development
+example. With PostgreSQL running, create the empty database once:
+
+```bash
+createdb -h localhost -U postgres toggle-ctrl
+```
+
+If `createdb` is unavailable, connect to the `postgres` database using `psql` and
+run:
+
+```sql
+CREATE DATABASE "toggle-ctrl";
+```
+
+Generate Prisma Client whenever the schema changes, then build and start the API
+from `apps/api`:
+
+```bash
+pnpm run prisma:generate
+pnpm run build
+pnpm run dev
+```
+
+Client generation also runs automatically before build, development, start, and
+typecheck. Generation does not create tables or apply migrations. The API
+connects during startup, so a missing `DATABASE_URL`, invalid credentials, or an
+unavailable PostgreSQL server causes a Prisma connection error. Nest shutdown
+hooks disconnect Prisma when the app closes or receives a shutdown signal.
+
+`PrismaModule` is global, so future services can inject `PrismaService` directly.
+Production must supply its own `DATABASE_URL` environment variable.
+
 ## Compile and run the project
 
 ```bash
@@ -38,7 +89,7 @@ $ pnpm install
 $ pnpm run start
 
 # watch mode
-$ pnpm run start:dev
+$ pnpm run dev
 
 # production mode
 $ pnpm run start:prod
