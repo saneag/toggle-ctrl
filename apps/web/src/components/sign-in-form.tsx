@@ -48,7 +48,7 @@ export function SignInForm() {
         <label className="text-foreground flex flex-col gap-2 text-sm font-medium">
           Email address
           <Input
-            className="bg-background h-11 px-3 text-sm"
+            className="h-11 bg-[#f4f4f5] px-3 text-sm"
             type="email"
             placeholder="you@company.com"
             autoComplete="email"

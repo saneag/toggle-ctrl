@@ -22,7 +22,7 @@ export function PasswordInput(inputProps: PasswordInputProps) {
           inputProps.onChange?.(event);
         }}
         type={visible ? "text" : "password"}
-        className="bg-background h-11 w-full px-3 pr-12 text-sm"
+        className="h-11 w-full bg-[#f4f4f5] px-3 pr-12 text-sm"
       />
       {hasValue && (
         <Button
