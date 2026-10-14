@@ -77,6 +77,7 @@ export class AuthController {
 
   @Get("csrf")
   async csrf(@Req() request: Request) {
+    assertAllowedOrigin(request);
     const user = await this.current(request);
     return { csrfToken: await this.sessions.rotateCsrf(user.sessionId) };
   }
