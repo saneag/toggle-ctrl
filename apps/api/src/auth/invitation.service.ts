@@ -8,7 +8,7 @@ import {
 
 import { PrismaService } from "../prisma/prisma.service.js";
 import { EmailService } from "./email.service.js";
-import { createToken, hashToken, readEmail } from "./security.util.js";
+import { createToken, hashToken, readEmail, readMemberRole } from "./security.util.js";
 import { SessionUser } from "./session.service.js";
 
 const invitationTtlMs = 1000 * 60 * 60 * 24 * 7;
@@ -23,7 +23,7 @@ export class InvitationService {
   async create(actor: SessionUser, organizationId: string, input: Record<string, unknown>) {
     await this.requireAdmin(actor.id, organizationId);
     const email = readEmail(input.email);
-    const role = this.readMemberRole(input.role);
+    const role = readMemberRole(input.role);
     const organization = await this.prisma.organization.findUniqueOrThrow({
       where: { id: organizationId },
     });
@@ -103,12 +103,5 @@ export class InvitationService {
     if (!membership) throw new NotFoundException("Organization not found");
     if (membership.role !== "ADMIN")
       throw new ForbiddenException("Only organization admins can invite members");
-  }
-
-  private readMemberRole(value: unknown): "MANAGER" | "VIEWER" {
-    if (value !== "MANAGER" && value !== "VIEWER") {
-      throw new BadRequestException("Role must be MANAGER or VIEWER");
-    }
-    return value;
   }
 }

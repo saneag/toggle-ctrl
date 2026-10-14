@@ -38,25 +38,23 @@ export function readSessionCookie(request: Request): string | undefined {
   return undefined;
 }
 
-export function setSessionCookie(response: Response, token: string, expiresAt: Date): void {
+function sessionCookieAttributes(maxAge: number): string {
   const secure = process.env.COOKIE_SECURE === "true" || process.env.NODE_ENV === "production";
   const sameSite = process.env.COOKIE_SAME_SITE ?? "lax";
   const domain = process.env.COOKIE_DOMAIN ? `; Domain=${process.env.COOKIE_DOMAIN}` : "";
+  return `Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${maxAge}${secure ? "; Secure" : ""}${domain}`;
+}
+
+export function setSessionCookie(response: Response, token: string, expiresAt: Date): void {
   const maxAge = Math.max(0, Math.floor((expiresAt.getTime() - Date.now()) / 1000));
   response.setHeader(
     "Set-Cookie",
-    `${SESSION_COOKIE}=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${maxAge}${secure ? "; Secure" : ""}${domain}`,
+    `${SESSION_COOKIE}=${encodeURIComponent(token)}; ${sessionCookieAttributes(maxAge)}`,
   );
 }
 
 export function clearSessionCookie(response: Response): void {
-  const secure = process.env.COOKIE_SECURE === "true" || process.env.NODE_ENV === "production";
-  const sameSite = process.env.COOKIE_SAME_SITE ?? "lax";
-  const domain = process.env.COOKIE_DOMAIN ? `; Domain=${process.env.COOKIE_DOMAIN}` : "";
-  response.setHeader(
-    "Set-Cookie",
-    `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=0${secure ? "; Secure" : ""}${domain}`,
-  );
+  response.setHeader("Set-Cookie", `${SESSION_COOKIE}=; ${sessionCookieAttributes(0)}`);
 }
 
 export function assertAllowedOrigin(request: Request): void {

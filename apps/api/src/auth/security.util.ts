@@ -45,6 +45,13 @@ export function readLoginPassword(value: unknown): string {
   return value;
 }
 
+export function readMemberRole(value: unknown): "MANAGER" | "VIEWER" {
+  if (value !== "MANAGER" && value !== "VIEWER") {
+    throw new BadRequestException("Role must be MANAGER or VIEWER");
+  }
+  return value;
+}
+
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16).toString("hex");
   const hash = (await scrypt(password, salt, 64)) as Buffer;

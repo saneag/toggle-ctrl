@@ -1,13 +1,14 @@
-import {
-  BadRequestException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from "@nestjs/common";
+import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
 
 import { PrismaService } from "../prisma/prisma.service.js";
 import { EmailService } from "./email.service.js";
-import { createToken, hashToken, readEmail, readRequiredText } from "./security.util.js";
+import {
+  createToken,
+  hashToken,
+  readEmail,
+  readMemberRole,
+  readRequiredText,
+} from "./security.util.js";
 import { SessionUser } from "./session.service.js";
 
 const setupTokenTtlMs = 1000 * 60 * 60 * 24;
@@ -31,7 +32,7 @@ export class MembershipService {
   async add(actor: SessionUser, organizationId: string, input: Record<string, unknown>) {
     await this.requireAdmin(actor.id, organizationId);
     const email = readEmail(input.email);
-    const role = this.readMemberRole(input.role);
+    const role = readMemberRole(input.role);
     const existingUser = await this.prisma.user.findUnique({ where: { email } });
     const organization = await this.prisma.organization.findUniqueOrThrow({
       where: { id: organizationId },
@@ -83,12 +84,5 @@ export class MembershipService {
     if (!membership) throw new NotFoundException("Organization not found");
     if (membership.role !== "ADMIN")
       throw new ForbiddenException("Only organization admins can manage members");
-  }
-
-  private readMemberRole(value: unknown): "MANAGER" | "VIEWER" {
-    if (value !== "MANAGER" && value !== "VIEWER") {
-      throw new BadRequestException("Role must be MANAGER or VIEWER");
-    }
-    return value;
   }
 }
