@@ -3,6 +3,7 @@ model User {
   email           String       @unique
   name            String
   passwordHash    String?
+  plan            Plan          @default(FREE)
   emailVerifiedAt DateTime?
   createdAt       DateTime     @default(now())
   memberships     Membership[]

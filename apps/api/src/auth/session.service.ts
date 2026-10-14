@@ -9,6 +9,7 @@ export type SessionUser = {
   id: string;
   email: string;
   name: string;
+  plan: "FREE" | "PRO";
   sessionId: string;
   csrfHash: string;
   memberships: { organizationId: string; organizationName: string; role: string }[];
@@ -59,6 +60,7 @@ export class SessionService {
       id: session.user.id,
       email: session.user.email,
       name: session.user.name,
+      plan: session.user.plan,
       sessionId: session.id,
       csrfHash: session.csrfHash,
       memberships: session.user.memberships.map((item) => ({
@@ -97,6 +99,7 @@ export class SessionService {
         id: true,
         email: true,
         name: true,
+        plan: true,
         memberships: { include: { organization: true } },
       },
     });
@@ -105,6 +108,7 @@ export class SessionService {
       id: user.id,
       email: user.email,
       name: user.name,
+      plan: user.plan,
       organizations: user.memberships.map((item) => ({
         id: item.organizationId,
         name: item.organization.name,

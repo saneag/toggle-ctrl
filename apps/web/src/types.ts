@@ -3,6 +3,7 @@ export type CurrentUser = {
   id: string;
   name: string;
   email: string;
+  plan: "FREE" | "PRO";
   organizations: Organization[];
 };
 export type Member = {
