@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 import type { CurrentUser } from "../types.js";
 import { BrandMark } from "./brand-mark.js";
 import { Button } from "./ui/button.js";
@@ -15,6 +17,30 @@ export const workspaceLimitMessage =
   "Your free tier includes only one workspace. Please upgrade to Pro for unlimited workspaces.";
 
 export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogout }: SidebarProps) {
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isAccountMenuOpen) return;
+
+    function closeOnOutsideClick(event: MouseEvent) {
+      if (event.target instanceof Node && !accountMenuRef.current?.contains(event.target)) {
+        setIsAccountMenuOpen(false);
+      }
+    }
+
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsAccountMenuOpen(false);
+    }
+
+    document.addEventListener("mousedown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("mousedown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [isAccountMenuOpen]);
+
   return (
     <aside className="border-border bg-card relative flex w-full flex-col border-b p-4 md:fixed md:inset-y-0 md:left-0 md:z-20 md:w-60 md:border-r md:border-b-0">
       <div className="mb-8 flex items-center gap-3 px-1 md:mb-10">
@@ -62,7 +88,7 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
             <small className="mt-1 block text-xs">Visit our help center</small>
           </span>
         </div>
-        <div className="flex items-center gap-3 px-1 py-2 text-sm">
+        <div className="relative flex items-center gap-3 px-1 py-2 text-sm" ref={accountMenuRef}>
           <span className="bg-secondary text-secondary-foreground grid size-8 shrink-0 place-items-center rounded-full font-semibold">
             {user.name.slice(0, 1).toUpperCase()}
           </span>
@@ -76,11 +102,31 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
             variant="ghost"
             size="icon-sm"
             className="text-muted-foreground"
-            onClick={onLogout}
-            aria-label="Sign out"
+            onClick={() => setIsAccountMenuOpen((open) => !open)}
+            aria-label="Account options"
+            aria-expanded={isAccountMenuOpen}
+            aria-haspopup="menu"
           >
             ⋯
           </Button>
+          {isAccountMenuOpen && (
+            <div
+              className="border-border bg-card absolute right-0 bottom-full z-30 mb-2 min-w-36 rounded-md border p-1 shadow-lg"
+              role="menu"
+            >
+              <Button
+                className="w-full justify-start"
+                onClick={() => {
+                  setIsAccountMenuOpen(false);
+                  onLogout();
+                }}
+                role="menuitem"
+                variant="ghost"
+              >
+                Sign out
+              </Button>
+            </div>
+          )}
         </div>
       </div>
     </aside>
