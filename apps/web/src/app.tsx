@@ -6,10 +6,17 @@ import { LoaderCircle } from "lucide-react";
 import { AuthScreen } from "./components/auth-screen.js";
 import { Dashboard } from "./components/dashboard.js";
 import { SetPasswordForm } from "./components/set-password-form.js";
+import { Button } from "./components/ui/button.js";
 import { getCurrentUser } from "./utils/get-current-user.js";
 
 export function App() {
-  const { data: user, isPending } = useQuery({
+  const {
+    data: user,
+    isPending,
+    isError,
+    error,
+    refetch,
+  } = useQuery({
     queryKey: ["current-user"],
     queryFn: getCurrentUser,
     retry: false,
@@ -53,6 +60,18 @@ export function App() {
               We’re very sorry this is taking so long. Please reload the page.
             </p>
           )}
+        </div>
+      </main>
+    );
+  if (isError)
+    return (
+      <main className="bg-background text-foreground grid min-h-svh place-items-center px-6">
+        <div className="flex max-w-md flex-col items-center gap-4 text-center">
+          <h1 className="text-xl font-semibold">Could not load your session</h1>
+          <p className="text-muted-foreground text-sm" role="alert">
+            {error instanceof Error ? error.message : "Please try again."}
+          </p>
+          <Button onClick={() => void refetch()}>Try again</Button>
         </div>
       </main>
     );
