@@ -109,12 +109,16 @@ export function Dashboard({ user }: { user: CurrentUser }) {
                 Good morning, {user.name.split(" ")[0]} <span>✳</span>
               </h1>
               <p className="text-muted-foreground mt-2 text-sm">
-                Manage access to {organization?.name ?? "your workspace"}.
+                {organization
+                  ? `Manage access to ${organization.name}.`
+                  : "Create or join a workspace to manage feature flags with your team."}
               </p>
             </div>
-            <Button variant="outline" className="shrink-0" onClick={() => membersQuery.refetch()}>
-              ↻ Refresh
-            </Button>
+            {organization && (
+              <Button variant="outline" className="shrink-0" onClick={() => membersQuery.refetch()}>
+                ↻ Refresh
+              </Button>
+            )}
           </div>
           {notice && (
             <p
@@ -155,29 +159,48 @@ export function Dashboard({ user }: { user: CurrentUser }) {
               </div>
             </section>
           )}
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="font-semibold">Members</h2>
-              <p className="text-muted-foreground mt-1 text-sm">
-                People who can access this workspace.
+          {organization ? (
+            <>
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <h2 className="font-semibold">Members</h2>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    People who can access this workspace.
+                  </p>
+                </div>
+                {isAdmin && <Badge variant="secondary">ADMIN</Badge>}
+              </div>
+              <MembersPanel members={membersQuery.data ?? []} isLoading={membersQuery.isPending} />
+              {isAdmin && (
+                <InviteForm
+                  organizationId={organization.id}
+                  onInvited={(message) => {
+                    setNotice(message);
+                    void membersQuery.refetch();
+                  }}
+                />
+              )}
+              {!isAdmin && (
+                <div className="border-border bg-card text-muted-foreground mt-5 rounded-md border p-4 text-sm">
+                  You have {organization.role.toLowerCase()} access in this workspace. Contact an
+                  admin to invite new members.
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="border-border bg-card mt-5 rounded-lg border p-6 sm:p-8">
+              <h2 className="font-semibold">No workspace yet</h2>
+              <p className="text-muted-foreground mt-2 max-w-lg text-sm">
+                You can create one whenever you’re ready, or accept an invitation to join an
+                existing workspace.
               </p>
-            </div>
-            {isAdmin && <Badge variant="secondary">ADMIN</Badge>}
-          </div>
-          <MembersPanel members={membersQuery.data ?? []} isLoading={membersQuery.isPending} />
-          {isAdmin && organization && (
-            <InviteForm
-              organizationId={organization.id}
-              onInvited={(message) => {
-                setNotice(message);
-                void membersQuery.refetch();
-              }}
-            />
-          )}
-          {!isAdmin && (
-            <div className="border-border bg-card text-muted-foreground mt-5 rounded-md border p-4 text-sm">
-              You have {organization?.role.toLowerCase()} access in this workspace. Contact an admin
-              to invite new members.
+              <Button
+                className="mt-5"
+                onClick={addOrganization}
+                disabled={organizationMutation.isPending}
+              >
+                {organizationMutation.isPending ? "Creating workspace…" : "Create workspace"}
+              </Button>
             </div>
           )}
           <footer className="border-border text-muted-foreground mt-14 flex justify-between border-t pt-4 text-xs">

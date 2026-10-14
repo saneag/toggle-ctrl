@@ -3,16 +3,17 @@ import { useMemo } from "react";
 import { useForm } from "react-hook-form";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowUpRight, Check, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 
 import { signUp } from "../utils/sign-up.js";
 import { validateEmail } from "../utils/validate-email.js";
-import { validatePassword } from "../utils/validate-password.js";
+import { getPasswordRequirements, validatePassword } from "../utils/validate-password.js";
 import { PasswordInput } from "./password-input.js";
 import { Button } from "./ui/button.js";
 import { Input } from "./ui/input.js";
 
-type SignUpFields = { name: string; email: string; password: string; organization: string };
+type SignUpFields = { name: string; email: string; password: string };
 
 export function SignUpForm() {
   const queryClient = useQueryClient();
@@ -23,38 +24,30 @@ export function SignUpForm() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
-  } = useForm<SignUpFields>({ mode: "onBlur", defaultValues: { email: invitation.email } });
+  } = useForm<SignUpFields>({ mode: "onChange", defaultValues: { email: invitation.email } });
+  const password = watch("password", "");
+  const passwordRequirements = getPasswordRequirements(password);
   const mutation = useMutation({
-    mutationFn: ({
-      name,
-      email,
-      password,
-      organization,
-    }: {
-      name: string;
-      email: string;
-      password: string;
-      organization: string;
-    }) => signUp(name, email, password, organization, invitation.token),
+    mutationFn: ({ name, email, password }: { name: string; email: string; password: string }) =>
+      signUp(name, email, password, invitation.token),
     onSuccess: (user) => queryClient.setQueryData(["current-user"], user),
     onError: (error) => toast.error(error.message),
   });
 
   const submit = handleSubmit(
-    ({ name, email, password, organization }) =>
+    ({ name, email, password }) =>
       mutation.mutate({
         name: name.trim(),
         email: email.trim(),
         password,
-        organization: organization?.trim() ?? "",
       }),
     (invalidFields) =>
       toast.error(
         invalidFields.email?.message ??
           invalidFields.password?.message ??
           invalidFields.name?.message ??
-          invalidFields.organization?.message ??
           "Check the highlighted fields.",
       ),
   );
@@ -62,14 +55,14 @@ export function SignUpForm() {
     <form className="space-y-4" noValidate onSubmit={submit}>
       <div className="mb-5 space-y-1">
         <h2 className="text-foreground text-xl font-semibold tracking-tight">
-          Start your workspace
+          Create your account
         </h2>
         <p className="text-muted-foreground text-sm">
-          Create an account and name your first workspace.
+          Create an account now. You can create or join a workspace later.
         </p>
       </div>
       <div className="space-y-2">
-        <label className="text-foreground block space-y-2 text-sm font-medium">
+        <label className="text-foreground flex flex-col gap-2 text-sm font-medium">
           Your name
           <Input
             className="bg-background h-11 px-3 text-sm"
@@ -90,7 +83,7 @@ export function SignUpForm() {
         )}
       </div>
       <div className="space-y-2">
-        <label className="text-foreground block space-y-2 text-sm font-medium">
+        <label className="text-foreground flex flex-col gap-2 text-sm font-medium">
           Work email
           <Input
             className="bg-background h-11 px-3 text-sm"
@@ -108,41 +101,19 @@ export function SignUpForm() {
           </p>
         )}
       </div>
-      {!invitation.token && (
-        <div className="space-y-2">
-          <label className="text-foreground block space-y-2 text-sm font-medium">
-            Workspace name
-            <Input
-              className="bg-background h-11 px-3 text-sm"
-              placeholder="Acme Studio"
-              aria-invalid={Boolean(errors.organization)}
-              aria-describedby={errors.organization ? "signup-organization-error" : undefined}
-              {...register("organization", {
-                validate: (value) => {
-                  if (!value.trim()) return "Enter a workspace name.";
-                  if (value.trim().length > 120)
-                    return "Workspace name must be 120 characters or fewer.";
-                  return true;
-                },
-              })}
-            />
-          </label>
-          {errors.organization && (
-            <p className="text-destructive text-xs" id="signup-organization-error">
-              {errors.organization.message}
-            </p>
-          )}
-        </div>
-      )}
       <div className="space-y-2">
-        <label className="text-foreground block space-y-2 text-sm font-medium">
+        <label className="text-foreground flex flex-col gap-2 text-sm font-medium">
           Password
           <PasswordInput
             {...register("password", { validate: (value) => validatePassword(value) ?? true })}
-            placeholder="At least 8 characters"
+            placeholder="Create a strong password"
             autoComplete="new-password"
             aria-invalid={Boolean(errors.password)}
-            aria-describedby={errors.password ? "signup-password-error" : undefined}
+            aria-describedby={
+              errors.password
+                ? "signup-password-error signup-password-requirements"
+                : "signup-password-requirements"
+            }
           />
         </label>
         {errors.password && (
@@ -150,11 +121,28 @@ export function SignUpForm() {
             {errors.password.message}
           </p>
         )}
-        <p className="text-muted-foreground text-xs">Use 8 to 64 characters.</p>
+        <ul
+          className="text-muted-foreground grid grid-cols-2 gap-x-3 gap-y-1 text-xs"
+          id="signup-password-requirements"
+        >
+          {passwordRequirements.map(({ label, met }) => (
+            <li className={`flex items-center gap-1.5 ${met ? "text-primary" : ""}`} key={label}>
+              <Check
+                aria-hidden="true"
+                className={`size-3.5 shrink-0 ${met ? "" : "opacity-40"}`}
+              />
+              {label}
+            </li>
+          ))}
+        </ul>
       </div>
       <Button className="h-11 w-full justify-between px-4 text-sm" disabled={mutation.isPending}>
-        {mutation.isPending ? "Creating workspace…" : "Create workspace"}
-        <span>↗</span>
+        {mutation.isPending ? "Creating account…" : "Create account"}
+        {mutation.isPending ? (
+          <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+        ) : (
+          <ArrowUpRight aria-hidden="true" className="size-4" />
+        )}
       </Button>
     </form>
   );

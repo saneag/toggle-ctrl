@@ -37,8 +37,18 @@ export class AuthService {
     if (invitationToken) {
       userId = await this.signUpFromInvitation(email, name, passwordHash, invitationToken);
     } else {
-      const organizationName = readRequiredText(input.organizationName, "Organization name");
-      userId = await this.createFirstOrganization(email, name, passwordHash, organizationName);
+      const organizationName =
+        input.organizationName === undefined
+          ? undefined
+          : readRequiredText(input.organizationName, "Organization name");
+      if (organizationName) {
+        userId = await this.createFirstOrganization(email, name, passwordHash, organizationName);
+      } else {
+        const user = await this.prisma.user.create({
+          data: { email, name, passwordHash, emailVerifiedAt: new Date() },
+        });
+        userId = user.id;
+      }
     }
 
     return this.sessions.create(userId);

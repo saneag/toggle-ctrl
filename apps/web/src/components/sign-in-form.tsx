@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { LogIn } from "lucide-react";
+import { LoaderCircle, LogIn } from "lucide-react";
 import { toast } from "sonner";
 
 import { signIn } from "../utils/sign-in.js";
@@ -19,7 +19,7 @@ export function SignInForm() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<SignInFields>({ mode: "onBlur" });
+  } = useForm<SignInFields>({ mode: "onChange" });
   const mutation = useMutation({
     mutationFn: ({ email, password }: { email: string; password: string }) =>
       signIn(email, password),
@@ -45,7 +45,7 @@ export function SignInForm() {
         </p>
       </div>
       <div className="space-y-2">
-        <label className="text-foreground block space-y-2 text-sm font-medium">
+        <label className="text-foreground flex flex-col gap-2 text-sm font-medium">
           Email address
           <Input
             className="bg-background h-11 px-3 text-sm"
@@ -64,11 +64,11 @@ export function SignInForm() {
         )}
       </div>
       <div className="space-y-2">
-        <label className="text-foreground block space-y-2 text-sm font-medium">
+        <label className="text-foreground flex flex-col gap-2 text-sm font-medium">
           Password
           <PasswordInput
             {...register("password", {
-              validate: (value) => validatePassword(value, 1, 256) ?? true,
+              validate: (value) => validatePassword(value, 1, 256, false) ?? true,
             })}
             placeholder="Enter your password"
             autoComplete="current-password"
@@ -85,7 +85,11 @@ export function SignInForm() {
       <div className="flex justify-end">
         <Button className="h-11 min-w-32 gap-2 px-4 text-sm" disabled={mutation.isPending}>
           {mutation.isPending ? "Signing in…" : "Sign in"}
-          <LogIn aria-hidden="true" className="size-4" />
+          {mutation.isPending ? (
+            <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />
+          ) : (
+            <LogIn aria-hidden="true" className="size-4" />
+          )}
         </Button>
       </div>
     </form>

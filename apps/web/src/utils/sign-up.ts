@@ -5,12 +5,11 @@ export async function signUp(
   name: string,
   email: string,
   password: string,
-  organizationName: string,
   invitationToken?: string,
 ): Promise<CurrentUser> {
   const result = await apiRequest<{ user: CurrentUser }>("/auth/signup", {
     method: "POST",
-    body: JSON.stringify({ name, email, password, organizationName, invitationToken }),
+    body: JSON.stringify({ name, email, password, invitationToken }),
   });
   return result.user;
 }

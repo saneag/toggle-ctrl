@@ -35,6 +35,18 @@ export function readPassword(value: unknown): string {
   if (typeof value !== "string") throw new BadRequestException("Password is required");
   if (value.length < 8) throw new BadRequestException("Password must be at least 8 characters");
   if (value.length > 64) throw new BadRequestException("Password must be 64 characters or fewer");
+  if (!/[A-Z]/.test(value)) {
+    throw new BadRequestException("Password must contain at least one uppercase letter");
+  }
+  if (!/[a-z]/.test(value)) {
+    throw new BadRequestException("Password must contain at least one lowercase letter");
+  }
+  if (!/[0-9]/.test(value)) {
+    throw new BadRequestException("Password must contain at least one number");
+  }
+  if (!/[^\p{L}\p{N}\s]/u.test(value)) {
+    throw new BadRequestException("Password must contain at least one symbol");
+  }
   return value;
 }
 

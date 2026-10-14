@@ -15,8 +15,11 @@ export function SetPasswordForm({ token, email }: { token: string; email: string
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
-  } = useForm<SetPasswordFields>({ mode: "onBlur" });
+  } = useForm<SetPasswordFields>({ mode: "onChange" });
+  const password = watch("password", "");
+  const passwordMessage = validatePassword(password);
   const mutation = useMutation({
     mutationFn: (password: string) => setPassword(token, password),
     onSuccess: (user) => queryClient.setQueryData(["current-user"], user),
@@ -51,7 +54,19 @@ export function SetPasswordForm({ token, email }: { token: string; email: string
             {errors.password.message}
           </p>
         )}
-        <p className="text-muted-foreground text-xs">Use 8 to 64 characters.</p>
+        <p
+          className={`text-xs ${
+            !password
+              ? "text-muted-foreground"
+              : passwordMessage
+                ? "text-destructive"
+                : "text-primary"
+          }`}
+        >
+          {!password
+            ? "Use 8 to 64 characters."
+            : (passwordMessage ?? "Password length meets the requirement.")}
+        </p>
       </div>
       <Button className="h-11 w-full justify-between px-4 text-sm" disabled={mutation.isPending}>
         {mutation.isPending ? "Saving password…" : "Set password"}

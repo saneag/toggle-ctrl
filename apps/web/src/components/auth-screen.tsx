@@ -33,17 +33,17 @@ export function AuthScreen({ children }: { children?: ReactNode }) {
             defaultValue={initialTab}
           >
             <TabsList
-              className="border-border mb-6 grid h-11 w-full grid-cols-2 gap-2 rounded-none border-b bg-transparent p-0"
+              className="mb-6 grid h-11 w-full grid-cols-2 gap-2 rounded-none bg-transparent p-0"
               variant="line"
             >
               <TabsTrigger
-                className="rounded-none text-sm focus-visible:border-transparent focus-visible:ring-0"
+                className="rounded-none border-0 bg-transparent text-sm outline-none focus-visible:ring-0 focus-visible:outline-none"
                 value="login"
               >
                 Sign in
               </TabsTrigger>
               <TabsTrigger
-                className="rounded-none text-sm focus-visible:border-transparent focus-visible:ring-0"
+                className="rounded-none border-0 bg-transparent text-sm outline-none focus-visible:ring-0 focus-visible:outline-none"
                 value="signup"
               >
                 Create account
