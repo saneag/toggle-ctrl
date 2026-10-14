@@ -54,17 +54,24 @@ export function InviteForm({
         </div>
       </div>
       <form className="flex flex-col gap-3 sm:flex-row" noValidate onSubmit={submit}>
-        <label className="sr-only" htmlFor="invite-email">
-          Email address
-        </label>
-        <Input
-          id="invite-email"
-          type="email"
-          placeholder="Add a teammate by email"
-          aria-invalid={Boolean(errors.email)}
-          aria-describedby={errors.email ? "invite-email-error" : undefined}
-          {...register("email", { validate: validateEmail })}
-        />
+        <div className="min-w-0 flex-1 space-y-2">
+          <label className="sr-only" htmlFor="invite-email">
+            Email address
+          </label>
+          <Input
+            id="invite-email"
+            type="email"
+            placeholder="Add a teammate by email"
+            aria-invalid={Boolean(errors.email)}
+            aria-describedby={errors.email ? "invite-email-error" : undefined}
+            {...register("email", { validate: validateEmail })}
+          />
+          {errors.email && (
+            <p className="text-destructive text-xs" id="invite-email-error">
+              {errors.email.message}
+            </p>
+          )}
+        </div>
         <Select
           value={watch("role")}
           onValueChange={(role) => setValue("role", role, { shouldValidate: true })}
@@ -82,11 +89,6 @@ export function InviteForm({
           <span>↗</span>
         </Button>
       </form>
-      {errors.email && (
-        <p className="text-destructive text-xs" id="invite-email-error">
-          {errors.email.message}
-        </p>
-      )}
     </Card>
   );
 }

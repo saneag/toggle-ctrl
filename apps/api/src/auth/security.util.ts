@@ -32,9 +32,9 @@ export function readRequiredText(value: unknown, label: string): string {
 }
 
 export function readPassword(value: unknown): string {
-  if (typeof value !== "string" || value.length < 12 || value.length > 256) {
-    throw new BadRequestException("Password must be between 12 and 256 characters");
-  }
+  if (typeof value !== "string") throw new BadRequestException("Password is required");
+  if (value.length < 8) throw new BadRequestException("Password must be at least 8 characters");
+  if (value.length > 64) throw new BadRequestException("Password must be 64 characters or fewer");
   return value;
 }
 

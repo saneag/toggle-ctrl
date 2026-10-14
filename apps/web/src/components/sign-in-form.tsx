@@ -18,7 +18,6 @@ export function SignInForm() {
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<SignInFields>({ mode: "onBlur" });
   const mutation = useMutation({
@@ -37,8 +36,6 @@ export function SignInForm() {
           "Check the highlighted fields.",
       ),
   );
-  const password = watch("password", "");
-
   return (
     <form className="space-y-5" noValidate onSubmit={submit}>
       <div className="mb-6 space-y-1">
@@ -47,39 +44,44 @@ export function SignInForm() {
           Sign in to manage your feature flags and rollouts.
         </p>
       </div>
-      <label className="text-foreground block space-y-2 text-sm font-medium">
-        Email address
-        <Input
-          className="bg-background h-11 px-3 text-sm"
-          type="email"
-          placeholder="you@company.com"
-          autoComplete="email"
-          aria-invalid={Boolean(errors.email)}
-          aria-describedby={errors.email ? "signin-email-error" : undefined}
-          {...register("email", { validate: validateEmail })}
-        />
-      </label>
-      {errors.email && (
-        <p className="text-destructive text-xs" id="signin-email-error">
-          {errors.email.message}
-        </p>
-      )}
-      <label className="text-foreground block space-y-2 text-sm font-medium">
-        Password
-        <PasswordInput
-          {...register("password", { validate: (value) => validatePassword(value, 1) ?? true })}
-          hasValue={password.length > 0}
-          placeholder="Enter your password"
-          autoComplete="current-password"
-          aria-invalid={Boolean(errors.password)}
-          aria-describedby={errors.password ? "signin-password-error" : undefined}
-        />
-      </label>
-      {errors.password && (
-        <p className="text-destructive text-xs" id="signin-password-error">
-          {errors.password.message}
-        </p>
-      )}
+      <div className="space-y-2">
+        <label className="text-foreground block space-y-2 text-sm font-medium">
+          Email address
+          <Input
+            className="bg-background h-11 px-3 text-sm"
+            type="email"
+            placeholder="you@company.com"
+            autoComplete="email"
+            aria-invalid={Boolean(errors.email)}
+            aria-describedby={errors.email ? "signin-email-error" : undefined}
+            {...register("email", { validate: validateEmail })}
+          />
+        </label>
+        {errors.email && (
+          <p className="text-destructive text-xs" id="signin-email-error">
+            {errors.email.message}
+          </p>
+        )}
+      </div>
+      <div className="space-y-2">
+        <label className="text-foreground block space-y-2 text-sm font-medium">
+          Password
+          <PasswordInput
+            {...register("password", {
+              validate: (value) => validatePassword(value, 1, 256) ?? true,
+            })}
+            placeholder="Enter your password"
+            autoComplete="current-password"
+            aria-invalid={Boolean(errors.password)}
+            aria-describedby={errors.password ? "signin-password-error" : undefined}
+          />
+        </label>
+        {errors.password && (
+          <p className="text-destructive text-xs" id="signin-password-error">
+            {errors.password.message}
+          </p>
+        )}
+      </div>
       <div className="flex justify-end">
         <Button className="h-11 min-w-32 gap-2 px-4 text-sm" disabled={mutation.isPending}>
           {mutation.isPending ? "Signing in…" : "Sign in"}
