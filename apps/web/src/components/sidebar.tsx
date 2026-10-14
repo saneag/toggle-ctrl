@@ -111,9 +111,17 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
           </Button>
           {isAccountMenuOpen && (
             <div
-              className="border-border bg-card absolute right-0 bottom-full z-30 mb-2 min-w-36 rounded-md border p-1 shadow-lg"
+              className="border-border bg-card absolute bottom-0 left-full z-30 ml-2 min-w-36 rounded-md border p-1 shadow-lg"
               role="menu"
             >
+              <span
+                aria-hidden="true"
+                className="border-r-border absolute top-1/2 -left-2 -translate-y-1/2 border-y-4 border-r-8 border-y-transparent"
+              />
+              <span
+                aria-hidden="true"
+                className="border-r-card absolute top-1/2 -left-1.5 -translate-y-1/2 border-y-[3px] border-r-[7px] border-y-transparent"
+              />
               <Button
                 className="w-full justify-start"
                 onClick={() => {
