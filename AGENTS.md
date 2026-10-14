@@ -1,0 +1,50 @@
+# Repository Guidelines
+
+## Product Purpose
+
+Toggle Ctrl is a feature management and experimentation platform inspired by Split.io. It is for
+software teams that need to manage feature flags, control who receives a change, stage releases, and
+run experiments. Keep product language and UI focused on feature flags, targeted rollouts, and
+experimentation. Do not describe the product as a generic project or productivity workspace.
+
+The current implementation is an early foundation: the API and web app support accounts, sessions,
+organizations, memberships, invitations, and password setup. Feature flag, rollout, targeting, and
+experiment models and workflows are not implemented yet. Treat those as product direction, not
+existing functionality, unless the code has since added them. Keep documentation clear about the
+difference between the product goal and shipped behavior.
+
+## Project Structure
+
+This pnpm workspace contains `apps/api` (NestJS, Prisma, PostgreSQL) and `apps/web` (React, Vite). Shared TypeScript and ESLint configuration lives in `packages/typescript-config` and `packages/eslint-config`; end-to-end tests live in `packages/e2e`. API source is under `apps/api/src`, API unit specs sit beside their modules, web source and tests are under `apps/web/src`, and static assets are in `assets`. Prisma's generator and datasource are in `apps/api/prisma/schema.prisma`; put each model in a clearly named file under `apps/api/prisma/models`. Keep migrations in `apps/api/prisma/migrations`.
+
+The web app keeps page components in `apps/web/src/components`, shadcn/ui components in
+`apps/web/src/components/ui`, and focused API request functions in `apps/web/src/utils`. Use TanStack
+Query for server state and mutations. App-specific public assets, including exported brand logos, live
+in `apps/web/public`.
+
+## Build, Test, and Development
+
+Run commands from the repository root unless noted:
+
+- `pnpm install` installs workspace dependencies.
+- `pnpm dev` starts the API and web app in watch/development mode.
+- `pnpm build` builds all workspace packages and apps.
+- `pnpm lint` and `pnpm typecheck` run workspace linting and TypeScript checks.
+- `pnpm test` runs unit tests; `pnpm test:e2e` runs API end-to-end tests.
+- `pnpm --filter api exec prisma migrate deploy --schema prisma` applies API migrations. API scripts generate Prisma Client with `--schema prisma`.
+
+## Style and Naming
+
+Use TypeScript, two-space indentation, semicolons, double quotes, and trailing commas. Prettier uses a 100-character print width and sorts imports; ESLint enforces shared workspace rules. Name React components in PascalCase, other TypeScript modules in kebab-case, and tests `*.spec.ts` or `*.e2e-spec.ts`. Keep Prisma models and enums in focused, descriptively named `.prisma` files.
+
+## Testing
+
+Use Vitest for unit and web tests, Testing Library for React behavior, and Supertest for API integration. Name unit files `*.spec.ts`; place end-to-end specs in `packages/e2e/tests` with the `*.e2e-spec.ts` suffix. Run the relevant package test command while developing and the root command before submitting. No repository-wide coverage threshold is configured.
+
+## Commits and Pull Requests
+
+Recent commits use concise imperative subjects, sometimes with Conventional Commit prefixes such as `feat(api):` and `docs:`. Keep changes focused and describe the area affected. PRs should explain the behavior and any migration or configuration changes, link related work when applicable, and report relevant checks. Include screenshots for visible web changes.
+
+## Configuration and Data
+
+Copy `apps/api/.env.example` to the ignored `apps/api/.env` for local settings; never commit secrets. Add schema changes as Prisma migrations and document any new required environment variables.

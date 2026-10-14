@@ -49,7 +49,7 @@ You can also create the database through `psql`:
 CREATE DATABASE "toggle-ctrl";
 ```
 
-The current Prisma schema has no application models or migrations. Prisma Client generation runs automatically before the API's build, dev, start, and typecheck scripts; it does not create the database or tables. The API needs a reachable PostgreSQL database and a valid `DATABASE_URL` when it starts.
+Prisma Client generation runs automatically before the API's build, dev, start, and typecheck scripts; it does not apply migrations. After configuring `DATABASE_URL` and creating the PostgreSQL database, apply migrations with `pnpm --filter api exec prisma migrate deploy --schema prisma`. The API needs a reachable PostgreSQL database when it starts.
 
 ### Run the applications
 

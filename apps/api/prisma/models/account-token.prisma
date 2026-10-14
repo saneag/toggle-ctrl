@@ -1,0 +1,9 @@
+model AccountToken {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  purpose   String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

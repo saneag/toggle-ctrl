@@ -1,1 +1,50 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+:root {
+  --radius: 0.625rem;
+  --background: #d7fff8;
+  --foreground: #181930;
+  --card: #ffffff;
+  --card-foreground: #181930;
+  --popover: #ffffff;
+  --popover-foreground: #181930;
+  --primary: #26a38e;
+  --primary-foreground: #ffffff;
+  --secondary: #d7fff8;
+  --secondary-foreground: #181930;
+  --muted: #cecfe0;
+  --muted-foreground: #747482;
+  --accent: #d7fff8;
+  --accent-foreground: #181930;
+  --destructive: #b6493b;
+  --border: #cecfe0;
+  --input: #cecfe0;
+  --ring: #26a38e;
+}

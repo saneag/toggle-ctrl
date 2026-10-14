@@ -34,7 +34,13 @@ Start PostgreSQL and create the database if it does not already exist:
 createdb -h localhost -U postgres toggle-ctrl
 ```
 
-Alternatively, create it from `psql` with `CREATE DATABASE "toggle-ctrl";`. The Prisma schema currently has no models or migrations. Generating Prisma Client does not create a database or tables. The API connects to PostgreSQL at startup, so the database must be reachable when the service runs.
+Alternatively, create it from `psql` with `CREATE DATABASE "toggle-ctrl";`. Apply the checked-in migrations after configuring the database:
+
+```sh
+pnpm --filter api exec prisma migrate deploy --schema prisma
+```
+
+Generating Prisma Client does not apply migrations. The API connects to PostgreSQL at startup, so the database must be reachable when the service runs.
 
 ## Run the API
 
@@ -45,6 +51,25 @@ pnpm --filter api dev
 ```
 
 The API listens on port 5000 by default. Routes use the `/api` prefix; the current health/example route is `GET http://localhost:5000/api`.
+
+## Authentication
+
+Configure SMTP using the values in `apps/api/.env.example` before using member invitations or password setup links. `WEB_ORIGINS` is a comma-separated allowlist for browser requests. `WEB_APP_URL` is the base address used in email links. If the web app and API are on unrelated sites, set `COOKIE_SAME_SITE="none"` and `COOKIE_SECURE="true"`. Production always marks the session cookie Secure. Set `COOKIE_DOMAIN` only when both services share a parent domain.
+
+The session token is stored in the `toggle_ctrl_session` HttpOnly cookie. Signup and login return a CSRF token; send it in the `X-CSRF-Token` header on authenticated POST requests. `GET /api/auth/csrf` returns a fresh CSRF token for an existing session.
+
+| Method        | Route                                            | Purpose                                                                                              |
+| ------------- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------- |
+| `POST`        | `/api/auth/signup`                               | Create an account and its first organization, or join an invited organization with `invitationToken` |
+| `POST`        | `/api/auth/login`                                | Create a session                                                                                     |
+| `POST`        | `/api/auth/logout`                               | Revoke the current session                                                                           |
+| `GET`         | `/api/auth/me`                                   | Return the current account and organizations                                                         |
+| `POST`        | `/api/auth/set-password`                         | Set a password using a one-time setup token                                                          |
+| `POST`        | `/api/organizations`                             | Create another organization for the current user                                                     |
+| `GET`, `POST` | `/api/organizations/:organizationId/members`     | List or directly add a manager/viewer (admin only)                                                   |
+| `POST`        | `/api/organizations/:organizationId/invitations` | Invite a manager/viewer by email (admin only)                                                        |
+| `GET`         | `/api/invitations`                               | List pending invitations for the current account                                                     |
+| `POST`        | `/api/invitations/:invitationId/accept`          | Accept an invitation                                                                                 |
 
 Other useful commands, also from the repository root:
 

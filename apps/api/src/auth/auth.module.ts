@@ -1,0 +1,25 @@
+import { Module } from "@nestjs/common";
+
+import { AuthController } from "./auth.controller.js";
+import { AuthService } from "./auth.service.js";
+import { EmailService } from "./email.service.js";
+import { InvitationController } from "./invitation.controller.js";
+import { InvitationService } from "./invitation.service.js";
+import { MembershipController } from "./membership.controller.js";
+import { MembershipService } from "./membership.service.js";
+import { OrganizationController } from "./organization.controller.js";
+import { OrganizationService } from "./organization.service.js";
+import { SessionService } from "./session.service.js";
+
+@Module({
+  controllers: [AuthController, OrganizationController, MembershipController, InvitationController],
+  providers: [
+    AuthService,
+    SessionService,
+    OrganizationService,
+    MembershipService,
+    InvitationService,
+    EmailService,
+  ],
+})
+export class AuthModule {}

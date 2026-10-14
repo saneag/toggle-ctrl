@@ -7,7 +7,7 @@
   "license": "UNLICENSED",
   "type": "module",
   "scripts": {
-    "prisma:generate": "prisma generate",
+    "prisma:generate": "prisma generate --schema prisma",
     "prebuild": "pnpm run prisma:generate",
     "predev": "pnpm run prisma:generate",
     "prestart": "pnpm run prisma:generate",
@@ -33,6 +33,7 @@
     "@nestjs/platform-express": "^12.0.1",
     "@nestjs/swagger": "^12.0.2",
     "@prisma/client": "^6.19.3",
+    "nodemailer": "^10.1.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
@@ -44,6 +45,7 @@
     "@toggle-ctrl/eslint-config": "workspace:*",
     "@types/express": "^5.0.0",
     "@types/node": "^24.0.0",
+    "@types/nodemailer": "^8.0.2",
     "@types/supertest": "^7.0.0",
     "@vitest/coverage-v8": "^4.1.2",
     "eslint": "10.9.1",

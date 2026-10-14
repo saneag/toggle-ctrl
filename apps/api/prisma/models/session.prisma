@@ -1,0 +1,11 @@
+model Session {
+  id        String   @id @default(uuid())
+  tokenHash String   @unique
+  csrfHash  String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
