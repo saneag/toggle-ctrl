@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { type FormEvent, useState } from "react";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 import type { CurrentUser } from "../types.js";
 import { acceptInvitation } from "../utils/accept-invitation.js";
@@ -10,16 +11,21 @@ import { getMembers } from "../utils/get-members.js";
 import { signOut } from "../utils/sign-out.js";
 import { InviteForm } from "./invite-form.js";
 import { MembersPanel } from "./members-panel.js";
-import { Sidebar } from "./sidebar.js";
+import { Sidebar, workspaceLimitMessage } from "./sidebar.js";
 import { Badge } from "./ui/badge.js";
 import { Button } from "./ui/button.js";
+import { Input } from "./ui/input.js";
 
 export function Dashboard({ user }: { user: CurrentUser }) {
   const [activeId, setActiveId] = useState(user.organizations[0]?.id ?? "");
   const [notice, setNotice] = useState("");
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [workspaceName, setWorkspaceName] = useState("");
   const queryClient = useQueryClient();
   const organization = user.organizations.find((item) => item.id === activeId);
   const isAdmin = organization?.role === "ADMIN";
+  const hasAdminWorkspace = user.organizations.some((item) => item.role === "ADMIN");
+  const canCreateWorkspace = user.plan === "PRO" || !hasAdminWorkspace;
 
   const membersQuery = useQuery({
     queryKey: ["members", activeId],
@@ -45,7 +51,9 @@ export function Dashboard({ user }: { user: CurrentUser }) {
           },
       );
       setActiveId(created.id);
-      setNotice("Workspace created.");
+      setIsCreateDialogOpen(false);
+      setWorkspaceName("");
+      toast.success("New workspace was created.");
     },
     onError: (error) => setNotice(error.message),
   });
@@ -67,9 +75,15 @@ export function Dashboard({ user }: { user: CurrentUser }) {
   });
 
   function addOrganization() {
-    const name = window.prompt("Name your new workspace");
-    if (!name?.trim()) return;
-    organizationMutation.mutate(name.trim());
+    setWorkspaceName("");
+    setIsCreateDialogOpen(true);
+  }
+
+  function submitOrganization(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const name = workspaceName.trim();
+    if (!name) return;
+    organizationMutation.mutate(name);
   }
 
   return (
@@ -79,6 +93,7 @@ export function Dashboard({ user }: { user: CurrentUser }) {
         activeId={activeId}
         onSelect={setActiveId}
         onCreate={addOrganization}
+        canCreate={canCreateWorkspace}
         onLogout={() => signOutMutation.mutate()}
       />
       <main className="min-w-0 flex-1 md:ml-60">
@@ -194,13 +209,15 @@ export function Dashboard({ user }: { user: CurrentUser }) {
                 You can create one whenever you’re ready, or accept an invitation to join an
                 existing workspace.
               </p>
-              <Button
-                className="mt-5"
-                onClick={addOrganization}
-                disabled={organizationMutation.isPending}
-              >
-                {organizationMutation.isPending ? "Creating workspace…" : "Create workspace"}
-              </Button>
+              <span title={canCreateWorkspace ? undefined : workspaceLimitMessage}>
+                <Button
+                  className="mt-5"
+                  onClick={addOrganization}
+                  disabled={!canCreateWorkspace || organizationMutation.isPending}
+                >
+                  {organizationMutation.isPending ? "Creating workspace…" : "Create workspace"}
+                </Button>
+              </span>
             </div>
           )}
           <footer className="border-border text-muted-foreground mt-14 flex justify-between border-t pt-4 text-xs">
@@ -209,6 +226,53 @@ export function Dashboard({ user }: { user: CurrentUser }) {
           </footer>
         </section>
       </main>
+      {isCreateDialogOpen && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
+          <section
+            aria-labelledby="create-workspace-title"
+            aria-modal="true"
+            className="bg-card text-card-foreground w-full max-w-md rounded-xl border p-6 shadow-lg"
+            role="dialog"
+          >
+            <h2 className="text-lg font-semibold" id="create-workspace-title">
+              Create workspace
+            </h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Choose a name for your new workspace.
+            </p>
+            <form className="mt-5 space-y-5" onSubmit={submitOrganization}>
+              <label className="block space-y-2 text-sm font-medium" htmlFor="workspace-name">
+                <span className="block">Workspace name</span>
+                <Input
+                  autoFocus
+                  className="bg-[#f4f4f5]"
+                  id="workspace-name"
+                  maxLength={80}
+                  onChange={(event) => setWorkspaceName(event.target.value)}
+                  placeholder="e.g. Acme"
+                  value={workspaceName}
+                />
+              </label>
+              <div className="flex justify-end gap-2">
+                <Button
+                  className="border-border text-foreground bg-[#f4f4f5] hover:bg-[#e9e9eb]"
+                  onClick={() => setIsCreateDialogOpen(false)}
+                  type="button"
+                  variant="outline"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  disabled={!workspaceName.trim() || organizationMutation.isPending}
+                  type="submit"
+                >
+                  {organizationMutation.isPending ? "Creating…" : "Create workspace"}
+                </Button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

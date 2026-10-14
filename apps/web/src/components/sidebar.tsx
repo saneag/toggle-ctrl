@@ -7,10 +7,14 @@ type SidebarProps = {
   activeId: string;
   onSelect: (id: string) => void;
   onCreate: () => void;
+  canCreate: boolean;
   onLogout: () => void;
 };
 
-export function Sidebar({ user, activeId, onSelect, onCreate, onLogout }: SidebarProps) {
+export const workspaceLimitMessage =
+  "Your free tier includes only one workspace. Please upgrade to Pro for unlimited workspaces.";
+
+export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogout }: SidebarProps) {
   return (
     <aside className="border-border bg-card relative flex w-full flex-col border-b p-4 md:fixed md:inset-y-0 md:left-0 md:z-20 md:w-60 md:border-r md:border-b-0">
       <div className="mb-8 flex items-center gap-3 px-1 md:mb-10">
@@ -19,9 +23,17 @@ export function Sidebar({ user, activeId, onSelect, onCreate, onLogout }: Sideba
       </div>
       <div className="text-muted-foreground mb-2 flex items-center justify-between px-1 text-[11px] font-semibold tracking-wider">
         WORKSPACES
-        <Button variant="ghost" size="icon-xs" onClick={onCreate} aria-label="Create workspace">
-          ＋
-        </Button>
+        <span title={canCreate ? undefined : workspaceLimitMessage}>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            onClick={onCreate}
+            aria-label="Create workspace"
+            disabled={!canCreate}
+          >
+            ＋
+          </Button>
+        </span>
       </div>
       <nav className="flex gap-1 overflow-x-auto md:flex-col" aria-label="Workspaces">
         {user.organizations.map((org, index) => (
