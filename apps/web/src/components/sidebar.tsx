@@ -116,11 +116,11 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
             >
               <span
                 aria-hidden="true"
-                className="border-r-border absolute top-1/2 -left-2 -translate-y-1/2 border-y-4 border-r-8 border-y-transparent"
+                className="border-r-border absolute top-1/2 -left-2 -translate-y-1/2 border-y-[6px] border-r-8 border-y-transparent"
               />
               <span
                 aria-hidden="true"
-                className="border-r-card absolute top-1/2 -left-1.5 -translate-y-1/2 border-y-[3px] border-r-[7px] border-y-transparent"
+                className="border-r-card absolute top-1/2 -left-1.5 -translate-y-1/2 border-y-[5px] border-r-[7px] border-y-transparent"
               />
               <Button
                 className="w-full justify-start"
