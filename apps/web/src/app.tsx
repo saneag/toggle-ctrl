@@ -47,14 +47,14 @@ export function App() {
   if (isPending)
     return (
       <main
-        className="bg-background grid min-h-svh place-items-center px-6 text-white"
+        className="app-page-surface bg-app-background text-foreground grid min-h-svh place-items-center px-6"
         role="status"
         aria-live="polite"
       >
         <div className="flex max-w-md flex-col items-center gap-5 text-center">
           <LoaderCircle aria-hidden="true" className="text-primary size-16 animate-spin" />
           {loadingStage === 1 && (
-            <p className="text-base font-medium text-white">
+            <p className="text-muted-foreground text-base font-medium">
               This is taking longer than expected. Please wait a little longer.
             </p>
           )}
@@ -68,7 +68,7 @@ export function App() {
     );
   if (isError)
     return (
-      <main className="bg-background grid min-h-svh place-items-center px-6 text-white">
+      <main className="app-page-surface bg-app-background text-foreground grid min-h-svh place-items-center px-6">
         <div className="flex max-w-md flex-col items-center gap-4 text-center">
           <h1 className="text-xl font-semibold">Could not load your session</h1>
           <p className="text-muted-foreground text-sm" role="alert">

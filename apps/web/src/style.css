@@ -3,8 +3,24 @@
 @import "shadcn/tailwind.css";
 
 @layer base {
+  html,
+  body,
+  #app {
+    min-height: 100%;
+  }
+
   body {
+    background-color: var(--app-background);
+    background-image: var(--app-background-gradient);
+    background-attachment: fixed;
+    color: var(--foreground);
     font-family: "Plus Jakarta Sans", "Segoe UI", sans-serif;
+  }
+
+  .app-page-surface {
+    background-color: var(--app-background);
+    background-image: var(--app-background-gradient);
+    background-attachment: fixed;
   }
 
   button:not(:disabled),
@@ -42,6 +58,18 @@
 :root {
   --radius: 0.625rem;
   --app-background: #f3f5f9;
+  --app-background-gradient:
+    radial-gradient(
+      65rem 42rem at 0% 100%,
+      color-mix(in srgb, var(--secondary) 55%, transparent),
+      transparent 72%
+    ),
+    linear-gradient(
+      35deg,
+      color-mix(in srgb, var(--secondary) 45%, var(--app-background)) 0%,
+      var(--app-background) 50%,
+      color-mix(in srgb, var(--primary) 7%, var(--app-background)) 100%
+    );
   --background: #181930;
   --foreground: #181930;
   --card: #ffffff;

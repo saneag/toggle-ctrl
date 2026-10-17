@@ -99,7 +99,7 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
   );
 
   return (
-    <aside className="border-border/60 text-card-foreground relative flex w-full flex-col border-b bg-white/75 p-4 shadow-sm backdrop-blur-xl md:fixed md:inset-y-3 md:left-3 md:z-20 md:w-60 md:rounded-2xl md:border md:shadow-[0_12px_40px_rgba(24,25,48,0.08)]">
+    <aside className="text-card-foreground relative flex w-full flex-col border-b border-white/80 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_8px_28px_rgba(38,163,142,0.10)] backdrop-blur-2xl backdrop-saturate-150 md:fixed md:inset-y-3 md:left-3 md:z-20 md:w-60 md:rounded-2xl md:border md:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_12px_40px_rgba(24,25,48,0.10)]">
       <Link
         to="/"
         aria-label="Toggle Ctrl home"

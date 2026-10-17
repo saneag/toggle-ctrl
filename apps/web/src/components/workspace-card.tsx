@@ -20,7 +20,7 @@ export function WorkspaceCard({
       className={
         isList
           ? "group bg-card hover:bg-accent relative min-h-16"
-          : "group border-border bg-card hover:border-primary/60 relative min-h-28 rounded-xl border shadow-[0_0_24px_rgba(38,163,142,0.18)] transition hover:shadow-[0_0_32px_rgba(38,163,142,0.34)]"
+          : "group border-border bg-card relative min-h-28 rounded-xl border shadow-[0_0_24px_rgba(38,163,142,0.18)] transition hover:shadow-[0_0_32px_rgba(38,163,142,0.34)]"
       }
     >
       <Link

@@ -273,6 +273,10 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
                 </ul>
               )}
             </section>
+          ) : isFavoriteLoading ? (
+            <p aria-live="polite" className="text-muted-foreground py-5 text-sm" role="status">
+              Loading workspaces…
+            </p>
           ) : (
             <div className="space-y-9">
               <WorkspaceGroup
