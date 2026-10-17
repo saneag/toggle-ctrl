@@ -5,6 +5,7 @@ model Membership {
   createdAt      DateTime     @default(now())
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  favorites      WorkspaceFavorite[]
 
   @@id([organizationId, userId])
   @@index([userId])

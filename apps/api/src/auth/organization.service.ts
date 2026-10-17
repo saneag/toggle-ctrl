@@ -2,6 +2,7 @@ import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../prisma/prisma.service.js";
 import { readRequiredText } from "./security.util.js";
+import type { OrganizationSearchScope } from "./types/organization-search.js";
 import type { OrganizationUpdateData } from "./types/organization-update.js";
 import type { CreateOrganizationInput, UpdateOrganizationInput } from "./types/request-payloads.js";
 
@@ -20,25 +21,83 @@ const organizationIcons = [
 export class OrganizationService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async search(userId: string, search: string) {
+  async getFavoriteIds(userId: string): Promise<string[]> {
+    const favorites = await this.prisma.workspaceFavorite.findMany({
+      where: { userId },
+      orderBy: { createdAt: "asc" },
+      select: { organizationId: true },
+    });
+    return favorites.map(({ organizationId }) => organizationId);
+  }
+
+  async setFavorite(userId: string, organizationId: string, isFavorite: boolean) {
+    if (isFavorite) {
+      const membership = await this.prisma.membership.findUnique({
+        where: { organizationId_userId: { organizationId, userId } },
+        select: { organizationId: true },
+      });
+      if (!membership) throw new HttpException("Workspace not found", HttpStatus.NOT_FOUND);
+
+      await this.prisma.workspaceFavorite.upsert({
+        where: { organizationId_userId: { organizationId, userId } },
+        create: { organizationId, userId },
+        update: {},
+      });
+    } else {
+      await this.prisma.workspaceFavorite.deleteMany({ where: { organizationId, userId } });
+    }
+    return this.getFavoriteIds(userId);
+  }
+
+  async search(userId: string, search: string, scopes: string[], favoriteIds: string[]) {
     if (typeof search !== "string") {
       throw new HttpException("Search must be text", HttpStatus.BAD_REQUEST);
     }
     if (search.length > 120) {
       throw new HttpException("Search must be 120 characters or fewer", HttpStatus.BAD_REQUEST);
     }
+    const allowedScopes: OrganizationSearchScope[] = ["favorites", "admin", "assigned"];
+    if (
+      !Array.isArray(scopes) ||
+      scopes.some((scope) => !allowedScopes.includes(scope as OrganizationSearchScope))
+    ) {
+      throw new HttpException("Choose a valid workspace search filter", HttpStatus.BAD_REQUEST);
+    }
+    if (!Array.isArray(favoriteIds) || favoriteIds.some((id) => typeof id !== "string")) {
+      throw new HttpException("Favorite workspace IDs must be text", HttpStatus.BAD_REQUEST);
+    }
+    if (scopes.includes("favorites") && favoriteIds.length === 0 && scopes.length === 1) return [];
+
+    const assignedRoles: ("MANAGER" | "VIEWER")[] = ["MANAGER", "VIEWER"];
+    const membershipFilters = [
+      ...(scopes.includes("admin") ? [{ role: "ADMIN" as const }] : []),
+      ...(scopes.includes("assigned") ? [{ role: { in: assignedRoles } }] : []),
+      ...(scopes.includes("favorites") && favoriteIds.length > 0
+        ? [{ organizationId: { in: favoriteIds } }]
+        : []),
+    ];
     const memberships = await this.prisma.membership.findMany({
       where: {
         userId,
-        organization: { name: { contains: search.trim(), mode: "insensitive" } },
+        ...(scopes.length > 0 ? { OR: membershipFilters } : {}),
       },
-      select: {
-        role: true,
-        organization: { select: { id: true, name: true, icon: true } },
-      },
+      select: { organizationId: true, role: true },
     });
-    return memberships
-      .map(({ organization, role }) => ({ ...organization, role }))
+    const organizations = await this.prisma.organization.findMany({
+      where: {
+        id: { in: memberships.map(({ organizationId }) => organizationId) },
+        name: { contains: search.trim(), mode: "insensitive" },
+      },
+      select: { id: true, name: true, icon: true },
+    });
+    const rolesByOrganizationId = new Map(
+      memberships.map(({ organizationId, role }) => [organizationId, role]),
+    );
+    return organizations
+      .map((organization) => ({
+        ...organization,
+        role: rolesByOrganizationId.get(organization.id)!,
+      }))
       .sort((first, second) => first.name.localeCompare(second.name));
   }
 

@@ -9,6 +9,6 @@ export function configureCors(app: INestApplication): void {
     origin: origins,
     credentials: true,
     allowedHeaders: ["Content-Type", "X-CSRF-Token"],
-    methods: ["GET", "POST", "OPTIONS"],
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   });
 }

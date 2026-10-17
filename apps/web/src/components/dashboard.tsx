@@ -33,6 +33,14 @@ import { MembersPanel } from "./members-panel.js";
 import { Sidebar, workspaceLimitMessage } from "./sidebar.js";
 import { Badge } from "./ui/badge.js";
 import { Button } from "./ui/button.js";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "./ui/dialog.js";
 import { Input } from "./ui/input.js";
 import type { DashboardProps } from "./workspace.types.js";
 
@@ -290,69 +298,55 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
           )}
         </section>
       </main>
-      {isCreateDialogOpen && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
-          <section
-            aria-labelledby="create-workspace-title"
-            aria-modal="true"
-            className="bg-card text-card-foreground w-full max-w-md rounded-xl border p-6 shadow-lg"
-            role="dialog"
-          >
-            <h2 className="text-lg font-semibold" id="create-workspace-title">
-              Create workspace
-            </h2>
-            <p className="text-muted-foreground mt-1 text-sm">
-              Choose a name for your new workspace.
-            </p>
-            <form className="mt-5 space-y-5" onSubmit={submitOrganization}>
-              <label className="block space-y-2 text-sm font-medium" htmlFor="workspace-name">
-                <span className="block">Workspace name</span>
-                <Input
-                  autoFocus
-                  className="bg-[#f4f4f5]"
-                  id="workspace-name"
-                  maxLength={80}
-                  onChange={(event) => setWorkspaceName(event.target.value)}
-                  placeholder="e.g. Acme"
-                  value={workspaceName}
-                />
-              </label>
-              <div className="flex justify-end gap-2">
-                <Button
-                  className="border-border text-foreground bg-[#f4f4f5] hover:bg-[#e9e9eb]"
-                  onClick={() => setIsCreateDialogOpen(false)}
-                  type="button"
-                  variant="outline"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  disabled={!workspaceName.trim() || organizationMutation.isPending}
-                  type="submit"
-                >
-                  {organizationMutation.isPending ? "Creating…" : "Create workspace"}
-                </Button>
-              </div>
-            </form>
-          </section>
-        </div>
-      )}
-      {isSettingsOpen && organization && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
-          <section
-            aria-labelledby="workspace-settings-title"
-            aria-modal="true"
-            className="bg-card text-card-foreground w-full max-w-md rounded-xl border p-6 shadow-lg"
-            role="dialog"
-          >
-            <h2 className="text-lg font-semibold" id="workspace-settings-title">
-              Workspace settings
-            </h2>
-            <p className="text-muted-foreground mt-1 text-sm">
-              Update the name and icon shown across your workspace.
-            </p>
+      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create workspace</DialogTitle>
+            <DialogDescription>Choose a name for your new workspace.</DialogDescription>
+          </DialogHeader>
+          <form className="space-y-5" onSubmit={submitOrganization}>
+            <label className="block space-y-2 text-sm font-medium" htmlFor="workspace-name">
+              <span className="block">Workspace name</span>
+              <Input
+                autoFocus
+                className="bg-[#f4f4f5]"
+                id="workspace-name"
+                maxLength={80}
+                onChange={(event) => setWorkspaceName(event.target.value)}
+                placeholder="e.g. Acme"
+                value={workspaceName}
+              />
+            </label>
+            <DialogFooter>
+              <Button
+                className="border-border text-foreground bg-[#f4f4f5] hover:bg-[#e9e9eb]"
+                onClick={() => setIsCreateDialogOpen(false)}
+                type="button"
+                variant="outline"
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={!workspaceName.trim() || organizationMutation.isPending}
+                type="submit"
+              >
+                {organizationMutation.isPending ? "Creating…" : "Create workspace"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isSettingsOpen && Boolean(organization)} onOpenChange={setIsSettingsOpen}>
+        {organization && (
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Workspace settings</DialogTitle>
+              <DialogDescription>
+                Update the name and icon shown across your workspace.
+              </DialogDescription>
+            </DialogHeader>
             <form
-              className="mt-5 space-y-5"
+              className="space-y-5"
               onSubmit={(event) => {
                 event.preventDefault();
                 settingsMutation.mutate();
@@ -398,18 +392,18 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                   ))}
                 </div>
               </fieldset>
-              <div className="flex justify-end gap-2">
+              <DialogFooter>
                 <Button onClick={() => setIsSettingsOpen(false)} type="button" variant="outline">
                   Cancel
                 </Button>
                 <Button disabled={!settingsName.trim() || settingsMutation.isPending} type="submit">
                   {settingsMutation.isPending ? "Saving…" : "Save changes"}
                 </Button>
-              </div>
+              </DialogFooter>
             </form>
-          </section>
-        </div>
-      )}
+          </DialogContent>
+        )}
+      </Dialog>
     </AppPage>
   );
 }

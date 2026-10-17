@@ -1,4 +1,16 @@
-import { Body, Controller, Get, Headers, Param, Patch, Post, Query, Req } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Headers,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  Req,
+} from "@nestjs/common";
 
 import type { Request } from "express";
 
@@ -14,9 +26,47 @@ export class OrganizationController {
   ) {}
 
   @Get()
-  async search(@Req() request: Request, @Query("search") search = "") {
+  async search(
+    @Req() request: Request,
+    @Query("search") search = "",
+    @Query("scopes") scopes = "",
+    @Query("favoriteIds") favoriteIds = "",
+  ) {
     const user = await this.sessions.authenticate(readSessionCookie(request));
-    return this.organizations.search(user.id, search);
+    return this.organizations.search(
+      user.id,
+      search,
+      scopes ? scopes.split(",").filter(Boolean) : [],
+      favoriteIds ? favoriteIds.split(",").filter(Boolean) : [],
+    );
+  }
+
+  @Get("favorites")
+  async getFavorites(@Req() request: Request) {
+    const user = await this.sessions.authenticate(readSessionCookie(request));
+    return this.organizations.getFavoriteIds(user.id);
+  }
+
+  @Put("favorites/:organizationId")
+  async addFavorite(
+    @Req() request: Request,
+    @Headers("x-csrf-token") csrf: string,
+    @Param("organizationId") organizationId: string,
+  ) {
+    const user = await this.sessions.authenticate(readSessionCookie(request));
+    await this.sessions.validateCsrf(user.sessionId, csrf);
+    return this.organizations.setFavorite(user.id, organizationId, true);
+  }
+
+  @Delete("favorites/:organizationId")
+  async removeFavorite(
+    @Req() request: Request,
+    @Headers("x-csrf-token") csrf: string,
+    @Param("organizationId") organizationId: string,
+  ) {
+    const user = await this.sessions.authenticate(readSessionCookie(request));
+    await this.sessions.validateCsrf(user.sessionId, csrf);
+    return this.organizations.setFavorite(user.id, organizationId, false);
   }
 
   @Post()
