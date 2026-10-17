@@ -1,4 +1,4 @@
-import { Body, Controller, Headers, Param, Patch, Post, Req } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Param, Patch, Post, Query, Req } from "@nestjs/common";
 
 import type { Request } from "express";
 
@@ -12,6 +12,12 @@ export class OrganizationController {
     private readonly organizations: OrganizationService,
     private readonly sessions: SessionService,
   ) {}
+
+  @Get()
+  async search(@Req() request: Request, @Query("search") search = "") {
+    const user = await this.sessions.authenticate(readSessionCookie(request));
+    return this.organizations.search(user.id, search);
+  }
 
   @Post()
   async create(

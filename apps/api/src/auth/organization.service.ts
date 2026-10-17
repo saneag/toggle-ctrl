@@ -20,6 +20,28 @@ const organizationIcons = [
 export class OrganizationService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async search(userId: string, search: string) {
+    if (typeof search !== "string") {
+      throw new HttpException("Search must be text", HttpStatus.BAD_REQUEST);
+    }
+    if (search.length > 120) {
+      throw new HttpException("Search must be 120 characters or fewer", HttpStatus.BAD_REQUEST);
+    }
+    const memberships = await this.prisma.membership.findMany({
+      where: {
+        userId,
+        organization: { name: { contains: search.trim(), mode: "insensitive" } },
+      },
+      select: {
+        role: true,
+        organization: { select: { id: true, name: true, icon: true } },
+      },
+    });
+    return memberships
+      .map(({ organization, role }) => ({ ...organization, role }))
+      .sort((first, second) => first.name.localeCompare(second.name));
+  }
+
   create(userId: string, input: CreateOrganizationInput) {
     const name = readRequiredText(input.name, "Organization name");
     return this.prisma.$transaction(async (tx) => {

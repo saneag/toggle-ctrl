@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Link } from "react-router-dom";
 
+import { useQuery } from "@tanstack/react-query";
 import {
   Building2,
   Check,
@@ -20,6 +21,7 @@ import {
   Zap,
 } from "lucide-react";
 
+import { searchWorkspaces } from "../utils/search-workspaces.js";
 import { BrandMark } from "./brand-mark.js";
 import { Button } from "./ui/button.js";
 import { Input } from "./ui/input.js";
@@ -56,10 +58,30 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
   const [favoriteIds, setFavoriteIds] = useState(() => readFavorites(user.id));
   const [isAddFavoriteOpen, setIsAddFavoriteOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
   const [showAllFavorites, setShowAllFavorites] = useState(false);
   const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const accountMenuRef = useRef<HTMLDivElement>(null);
   const storageKey = favoriteStorageKey(user.id);
+
+  useEffect(() => {
+    if (!isAddFavoriteOpen) {
+      setDebouncedSearchQuery("");
+      return;
+    }
+
+    const debounceTimer = window.setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery.trim());
+    }, 350);
+    return () => window.clearTimeout(debounceTimer);
+  }, [isAddFavoriteOpen, searchQuery]);
+
+  const workspaceSearch = useQuery({
+    queryKey: ["workspace-search", debouncedSearchQuery],
+    queryFn: () => searchWorkspaces(debouncedSearchQuery),
+    enabled: isAddFavoriteOpen,
+    staleTime: 30_000,
+  });
 
   useEffect(() => {
     localStorage.setItem(storageKey, JSON.stringify(favoriteIds));
@@ -90,10 +112,8 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
     .map((favoriteId) => user.organizations.find((organization) => organization.id === favoriteId))
     .filter((organization) => organization !== undefined);
   const visibleFavorites = showAllFavorites ? favorites : favorites.slice(0, 5);
-  const availableWorkspaces = user.organizations.filter(
-    (organization) =>
-      !favoriteIds.includes(organization.id) &&
-      organization.name.toLowerCase().includes(searchQuery.trim().toLowerCase()),
+  const availableWorkspaces = (workspaceSearch.data ?? []).filter(
+    (organization) => !favoriteIds.includes(organization.id),
   );
 
   function toggleFavorite(organizationId: string) {
@@ -169,7 +189,7 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
             />
             <Input
               autoFocus
-              className="h-9 border-0 bg-transparent pr-2 pl-9 shadow-none focus-visible:ring-0"
+              className="h-9 border-0 bg-transparent pr-2 pl-9 shadow-none focus-visible:ring-0 dark:bg-transparent"
               id="favorite-workspace-query"
               onChange={(event) => setSearchQuery(event.target.value)}
               placeholder="Search workspaces"
@@ -177,7 +197,15 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
             />
           </div>
           <div className="mt-1 max-h-40 overflow-y-auto">
-            {availableWorkspaces.length > 0 ? (
+            {searchQuery.trim() !== debouncedSearchQuery ||
+            workspaceSearch.isPending ||
+            workspaceSearch.isFetching ? (
+              <p className="text-muted-foreground px-2 py-2 text-xs">Searching workspaces…</p>
+            ) : workspaceSearch.isError ? (
+              <p className="text-muted-foreground px-2 py-2 text-xs" role="alert">
+                Could not load workspaces.
+              </p>
+            ) : availableWorkspaces.length > 0 ? (
               availableWorkspaces.map((organization) => (
                 <button
                   className="text-muted-foreground hover:bg-accent hover:text-accent-foreground flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm"
@@ -191,9 +219,11 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
               ))
             ) : (
               <p className="text-muted-foreground px-2 py-2 text-xs">
-                {user.organizations.length > 0 &&
-                user.organizations.every((organization) => favoriteIds.includes(organization.id)) &&
-                !searchQuery.trim()
+                {(workspaceSearch.data?.length ?? 0) > 0 &&
+                workspaceSearch.data?.every((organization) =>
+                  favoriteIds.includes(organization.id),
+                ) &&
+                !debouncedSearchQuery
                   ? "All your workspaces are favorites."
                   : "No matching workspaces."}
               </p>
