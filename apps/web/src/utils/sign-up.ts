@@ -1,4 +1,4 @@
-import type { CurrentUser } from "../types.js";
+import type { AuthenticatedUserResponse, CurrentUser, SignUpRequest } from "../types.js";
 import { apiRequest } from "./api-request.js";
 
 export async function signUp(
@@ -7,9 +7,14 @@ export async function signUp(
   password: string,
   invitationToken?: string,
 ): Promise<CurrentUser> {
-  const result = await apiRequest<{ user: CurrentUser }>("/auth/signup", {
+  const result = await apiRequest<AuthenticatedUserResponse>("/auth/signup", {
     method: "POST",
-    body: JSON.stringify({ name, email, password, invitationToken }),
+    body: JSON.stringify({
+      name,
+      email,
+      password,
+      invitationToken,
+    } satisfies SignUpRequest),
   });
   return result.user;
 }

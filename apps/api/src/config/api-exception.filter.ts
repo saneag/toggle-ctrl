@@ -10,6 +10,8 @@ import {
 import { Prisma } from "@prisma/client";
 import type { Request, Response } from "express";
 
+import type { DatabaseErrorResponse } from "./api-exception.types.js";
+
 @Catch()
 export class ApiExceptionFilter implements ExceptionFilter {
   private readonly logger = new Logger(ApiExceptionFilter.name);
@@ -58,7 +60,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
     });
   }
 
-  private readDatabaseError(exception: unknown): { status: number; message: string } | undefined {
+  private readDatabaseError(exception: unknown): DatabaseErrorResponse | undefined {
     if (!(exception instanceof Prisma.PrismaClientKnownRequestError)) return undefined;
 
     switch (exception.code) {

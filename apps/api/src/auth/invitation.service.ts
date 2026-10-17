@@ -9,7 +9,8 @@ import {
 import { PrismaService } from "../prisma/prisma.service.js";
 import { EmailService } from "./email.service.js";
 import { createToken, hashToken, readEmail, readMemberRole } from "./security.util.js";
-import { SessionUser } from "./session.service.js";
+import type { CreateInvitationInput } from "./types/request-payloads.js";
+import type { SessionUser } from "./types/session-user.js";
 
 const invitationTtlMs = 1000 * 60 * 60 * 24 * 7;
 
@@ -20,7 +21,7 @@ export class InvitationService {
     private readonly email: EmailService,
   ) {}
 
-  async create(actor: SessionUser, organizationId: string, input: Record<string, unknown>) {
+  async create(actor: SessionUser, organizationId: string, input: CreateInvitationInput) {
     await this.requireAdmin(actor.id, organizationId);
     const email = readEmail(input.email);
     const role = readMemberRole(input.role);

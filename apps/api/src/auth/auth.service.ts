@@ -16,6 +16,7 @@ import {
   readRequiredText,
 } from "./security.util.js";
 import { SessionService } from "./session.service.js";
+import type { LoginInput, SignUpInput } from "./types/request-payloads.js";
 
 @Injectable()
 export class AuthService {
@@ -24,7 +25,7 @@ export class AuthService {
     private readonly sessions: SessionService,
   ) {}
 
-  async signUp(input: Record<string, unknown>, invitationToken?: string) {
+  async signUp(input: SignUpInput, invitationToken?: string) {
     const email = readEmail(input.email);
     const name = readRequiredText(input.name, "Name");
     const passwordHash = await hashPassword(readPassword(input.password));
@@ -54,7 +55,7 @@ export class AuthService {
     return this.sessions.create(userId);
   }
 
-  async login(input: Record<string, unknown>) {
+  async login(input: LoginInput) {
     const email = readEmail(input.email);
     const password = readLoginPassword(input.password);
 

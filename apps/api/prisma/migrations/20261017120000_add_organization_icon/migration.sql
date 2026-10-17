@@ -1,0 +1,1 @@
+ALTER TABLE "Organization" ADD COLUMN "icon" TEXT NOT NULL DEFAULT 'flag';

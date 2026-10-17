@@ -1,3 +1,5 @@
+import type { ApiErrorResponse } from "../types.js";
+
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5000/api";
 
 export class ApiRequestError extends Error {
@@ -17,7 +19,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     headers: { "Content-Type": "application/json", ...options.headers },
   });
   if (!response.ok) {
-    const body = (await response.json().catch(() => ({}))) as { message?: unknown };
+    const body = (await response.json().catch(() => ({}))) as ApiErrorResponse;
     const message = Array.isArray(body.message)
       ? body.message.filter((item): item is string => typeof item === "string").join(" ")
       : typeof body.message === "string"

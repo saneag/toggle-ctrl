@@ -9,7 +9,8 @@ import {
   readMemberRole,
   readRequiredText,
 } from "./security.util.js";
-import { SessionUser } from "./session.service.js";
+import type { AddMemberInput } from "./types/request-payloads.js";
+import type { SessionUser } from "./types/session-user.js";
 
 const setupTokenTtlMs = 1000 * 60 * 60 * 24;
 
@@ -29,7 +30,7 @@ export class MembershipService {
     });
   }
 
-  async add(actor: SessionUser, organizationId: string, input: Record<string, unknown>) {
+  async add(actor: SessionUser, organizationId: string, input: AddMemberInput) {
     await this.requireAdmin(actor.id, organizationId);
     const email = readEmail(input.email);
     const role = readMemberRole(input.role);

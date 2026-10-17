@@ -1,12 +1,11 @@
-import type { ReactNode } from "react";
-
+import type { AuthScreenProps } from "./auth.types.js";
 import { BrandMark } from "./brand-mark.js";
 import { SignInForm } from "./sign-in-form.js";
 import { SignUpForm } from "./sign-up-form.js";
 import { Card } from "./ui/card.js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs.js";
 
-export function AuthScreen({ children }: { children?: ReactNode }) {
+export function AuthScreen({ children }: AuthScreenProps) {
   const initialTab = new URLSearchParams(window.location.search).has("invite") ? "signup" : "login";
   return (
     <main className="grid min-h-svh md:grid-cols-2">

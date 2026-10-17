@@ -4,21 +4,21 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
 
+import type { SetPasswordFormValues } from "../types.js";
 import { setPassword } from "../utils/set-password.js";
 import { validatePassword } from "../utils/validate-password.js";
+import type { SetPasswordFormProps } from "./auth.types.js";
 import { PasswordInput } from "./password-input.js";
 import { Button } from "./ui/button.js";
 
-type SetPasswordFields = { password: string };
-
-export function SetPasswordForm({ token, email }: { token: string; email: string }) {
+export function SetPasswordForm({ token, email }: SetPasswordFormProps) {
   const queryClient = useQueryClient();
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors },
-  } = useForm<SetPasswordFields>({ mode: "onChange" });
+  } = useForm<SetPasswordFormValues>({ mode: "onChange" });
   const password = watch("password", "");
   const passwordMessage = validatePassword(password);
   const mutation = useMutation({

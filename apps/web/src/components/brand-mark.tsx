@@ -1,6 +1,4 @@
-type BrandMarkProps = {
-  variant?: "icon" | "horizontal";
-};
+import type { BrandMarkProps } from "./brand-mark.types.js";
 
 export function BrandMark({ variant = "icon" }: BrandMarkProps) {
   const logo =

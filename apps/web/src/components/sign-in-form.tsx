@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { LoaderCircle, LogIn } from "lucide-react";
 import { toast } from "sonner";
 
+import type { SignInFormValues } from "../types.js";
 import { signIn } from "../utils/sign-in.js";
 import { validateEmail } from "../utils/validate-email.js";
 import { validatePassword } from "../utils/validate-password.js";
@@ -11,18 +12,15 @@ import { PasswordInput } from "./password-input.js";
 import { Button } from "./ui/button.js";
 import { Input } from "./ui/input.js";
 
-type SignInFields = { email: string; password: string };
-
 export function SignInForm() {
   const queryClient = useQueryClient();
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<SignInFields>({ mode: "onChange" });
+  } = useForm<SignInFormValues>({ mode: "onChange" });
   const mutation = useMutation({
-    mutationFn: ({ email, password }: { email: string; password: string }) =>
-      signIn(email, password),
+    mutationFn: ({ email, password }: SignInFormValues) => signIn(email, password),
     onSuccess: (user) => queryClient.setQueryData(["current-user"], user),
     onError: (error) => toast.error(error.message),
   });

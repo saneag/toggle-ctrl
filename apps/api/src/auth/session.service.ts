@@ -2,18 +2,9 @@ import { ForbiddenException, Injectable, UnauthorizedException } from "@nestjs/c
 
 import { PrismaService } from "../prisma/prisma.service.js";
 import { createToken, hashToken } from "./security.util.js";
+import type { SessionUser } from "./types/session-user.js";
 
 export const SESSION_TTL_MS = 1000 * 60 * 60 * 24 * 14;
-
-export type SessionUser = {
-  id: string;
-  email: string;
-  name: string;
-  plan: "FREE" | "PRO";
-  sessionId: string;
-  csrfHash: string;
-  memberships: { organizationId: string; organizationName: string; role: string }[];
-};
 
 @Injectable()
 export class SessionService {
@@ -66,6 +57,7 @@ export class SessionService {
       memberships: session.user.memberships.map((item) => ({
         organizationId: item.organizationId,
         organizationName: item.organization.name,
+        organizationIcon: item.organization.icon,
         role: item.role,
       })),
     };
@@ -112,6 +104,7 @@ export class SessionService {
       organizations: user.memberships.map((item) => ({
         id: item.organizationId,
         name: item.organization.name,
+        icon: item.organization.icon,
         role: item.role,
       })),
     };

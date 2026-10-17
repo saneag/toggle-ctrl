@@ -4,22 +4,16 @@ import { useMutation } from "@tanstack/react-query";
 import { ArrowUpRight, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import type { InvitationFormValues } from "../types/invitation.js";
 import { createInvitation } from "../utils/create-invitation.js";
 import { validateEmail } from "../utils/validate-email.js";
+import type { InviteFormProps } from "./auth.types.js";
 import { Button } from "./ui/button.js";
 import { Card } from "./ui/card.js";
 import { Input } from "./ui/input.js";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select.js";
 
-type InviteFields = { email: string; role: string };
-
-export function InviteForm({
-  organizationId,
-  onInvited,
-}: {
-  organizationId: string;
-  onInvited: (message: string) => void;
-}) {
+export function InviteForm({ organizationId, onInvited }: InviteFormProps) {
   const {
     register,
     handleSubmit,
@@ -27,9 +21,9 @@ export function InviteForm({
     setValue,
     watch,
     formState: { errors },
-  } = useForm<InviteFields>({ mode: "onBlur", defaultValues: { role: "VIEWER" } });
+  } = useForm<InvitationFormValues>({ mode: "onBlur", defaultValues: { role: "VIEWER" } });
   const mutation = useMutation({
-    mutationFn: ({ email, role }: { email: string; role: string }) =>
+    mutationFn: ({ email, role }: InvitationFormValues) =>
       createInvitation(organizationId, email, role),
     onSuccess: () => {
       reset({ email: "", role: "VIEWER" });

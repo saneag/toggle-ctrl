@@ -3,15 +3,30 @@ import { type FormEvent, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpRight, RefreshCw, Sparkles } from "lucide-react";
+import {
+  ArrowUpRight,
+  Building2,
+  Code2,
+  Flag,
+  FlaskConical,
+  Layers3,
+  Pencil,
+  RefreshCw,
+  Rocket,
+  Sparkles,
+  Target,
+  Zap,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import type { CurrentUser } from "../types.js";
+import type { WorkspaceIcon } from "../types.js";
 import { acceptInvitation } from "../utils/accept-invitation.js";
 import { createOrganization } from "../utils/create-organization.js";
 import { getInvitations } from "../utils/get-invitations.js";
 import { getMembers } from "../utils/get-members.js";
 import { signOut } from "../utils/sign-out.js";
+import { updateOrganization } from "../utils/update-organization.js";
 import { AppPage } from "./app-page.js";
 import { InviteForm } from "./invite-form.js";
 import { MembersPanel } from "./members-panel.js";
@@ -19,19 +34,17 @@ import { Sidebar, workspaceLimitMessage } from "./sidebar.js";
 import { Badge } from "./ui/badge.js";
 import { Button } from "./ui/button.js";
 import { Input } from "./ui/input.js";
+import type { DashboardProps } from "./workspace.types.js";
 
-export function Dashboard({
-  user,
-  organizationId = "",
-}: {
-  user: CurrentUser;
-  organizationId?: string;
-}) {
+export function Dashboard({ user, organizationId = "" }: DashboardProps) {
   const navigate = useNavigate();
   const activeId = organizationId;
   const [notice, setNotice] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [workspaceName, setWorkspaceName] = useState("");
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsName, setSettingsName] = useState("");
+  const [settingsIcon, setSettingsIcon] = useState<WorkspaceIcon>("flag");
   const queryClient = useQueryClient();
   const organization = user.organizations.find((item) => item.id === activeId);
   const isAdmin = organization?.role === "ADMIN";
@@ -65,6 +78,25 @@ export function Dashboard({
       setIsCreateDialogOpen(false);
       setWorkspaceName("");
       toast.success("New workspace was created.");
+    },
+    onError: (error) => setNotice(error.message),
+  });
+  const settingsMutation = useMutation({
+    mutationFn: () =>
+      updateOrganization(activeId, { name: settingsName.trim(), icon: settingsIcon }),
+    onSuccess: (updated) => {
+      queryClient.setQueryData<CurrentUser>(
+        ["current-user"],
+        (current) =>
+          current && {
+            ...current,
+            organizations: current.organizations.map((item) =>
+              item.id === updated.id ? { ...item, ...updated } : item,
+            ),
+          },
+      );
+      setIsSettingsOpen(false);
+      toast.success("Workspace settings saved.");
     },
     onError: (error) => setNotice(error.message),
   });
@@ -107,7 +139,7 @@ export function Dashboard({
         canCreate={canCreateWorkspace}
         onLogout={() => signOutMutation.mutate()}
       />
-      <main className="min-w-0 flex-1 md:ml-60">
+      <main className="min-w-0 flex-1 md:ml-[264px]">
         <header className="border-border bg-card text-muted-foreground sticky top-0 z-10 flex h-14 items-center justify-between border-b px-4 text-sm sm:px-8">
           <div>
             <Link
@@ -203,7 +235,23 @@ export function Dashboard({
                     People who can access this workspace.
                   </p>
                 </div>
-                {isAdmin && <Badge variant="secondary">ADMIN</Badge>}
+                {isAdmin && (
+                  <div className="flex items-center gap-3">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setSettingsName(organization.name);
+                        setSettingsIcon((organization.icon || "flag") as WorkspaceIcon);
+                        setIsSettingsOpen(true);
+                      }}
+                    >
+                      <Pencil aria-hidden="true" className="mr-2 size-3.5" />
+                      Edit workspace
+                    </Button>
+                    <Badge variant="secondary">ADMIN</Badge>
+                  </div>
+                )}
               </div>
               <MembersPanel members={membersQuery.data ?? []} isLoading={membersQuery.isPending} />
               {isAdmin && (
@@ -283,6 +331,79 @@ export function Dashboard({
                   type="submit"
                 >
                   {organizationMutation.isPending ? "Creating…" : "Create workspace"}
+                </Button>
+              </div>
+            </form>
+          </section>
+        </div>
+      )}
+      {isSettingsOpen && organization && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4">
+          <section
+            aria-labelledby="workspace-settings-title"
+            aria-modal="true"
+            className="bg-card text-card-foreground w-full max-w-md rounded-xl border p-6 shadow-lg"
+            role="dialog"
+          >
+            <h2 className="text-lg font-semibold" id="workspace-settings-title">
+              Workspace settings
+            </h2>
+            <p className="text-muted-foreground mt-1 text-sm">
+              Update the name and icon shown across your workspace.
+            </p>
+            <form
+              className="mt-5 space-y-5"
+              onSubmit={(event) => {
+                event.preventDefault();
+                settingsMutation.mutate();
+              }}
+            >
+              <label className="block space-y-2 text-sm font-medium" htmlFor="edit-workspace-name">
+                Workspace name
+                <Input
+                  autoFocus
+                  id="edit-workspace-name"
+                  maxLength={80}
+                  onChange={(event) => setSettingsName(event.target.value)}
+                  value={settingsName}
+                />
+              </label>
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium">Workspace icon</legend>
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    [
+                      ["flag", Flag],
+                      ["zap", Zap],
+                      ["rocket", Rocket],
+                      ["flask", FlaskConical],
+                      ["target", Target],
+                      ["layers", Layers3],
+                      ["code", Code2],
+                      ["building", Building2],
+                    ] as const
+                  ).map(([key, Icon]) => (
+                    <Button
+                      aria-label={`${key} icon`}
+                      aria-pressed={settingsIcon === key}
+                      className={settingsIcon === key ? "ring-primary ring-2" : ""}
+                      key={key}
+                      onClick={() => setSettingsIcon(key)}
+                      size="icon"
+                      type="button"
+                      variant="outline"
+                    >
+                      <Icon aria-hidden="true" className="size-4" />
+                    </Button>
+                  ))}
+                </div>
+              </fieldset>
+              <div className="flex justify-end gap-2">
+                <Button onClick={() => setIsSettingsOpen(false)} type="button" variant="outline">
+                  Cancel
+                </Button>
+                <Button disabled={!settingsName.trim() || settingsMutation.isPending} type="submit">
+                  {settingsMutation.isPending ? "Saving…" : "Save changes"}
                 </Button>
               </div>
             </form>

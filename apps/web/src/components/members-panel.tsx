@@ -1,7 +1,7 @@
 import { LoaderCircle } from "lucide-react";
 
-import type { Member } from "../types.js";
 import { Card } from "./ui/card.js";
+import type { MembersPanelProps } from "./workspace.types.js";
 
 const initials = (name: string) =>
   name
@@ -11,7 +11,7 @@ const initials = (name: string) =>
     .join("")
     .toUpperCase();
 
-export function MembersPanel({ members, isLoading }: { members: Member[]; isLoading: boolean }) {
+export function MembersPanel({ members, isLoading }: MembersPanelProps) {
   if (isLoading)
     return (
       <Card className="border-border text-muted-foreground flex min-h-48 flex-col items-center justify-center gap-3 p-8 text-center">

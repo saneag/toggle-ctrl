@@ -10,7 +10,7 @@ import { Dashboard } from "./components/dashboard.js";
 import { SetPasswordForm } from "./components/set-password-form.js";
 import { Button } from "./components/ui/button.js";
 import { WorkspaceHome } from "./components/workspace-home.js";
-import type { CurrentUser } from "./types.js";
+import type { WorkspaceRouteProps } from "./components/workspace.types.js";
 import { getCurrentUser } from "./utils/get-current-user.js";
 
 export function App() {
@@ -121,7 +121,7 @@ export function App() {
   );
 }
 
-function WorkspaceRoute({ user }: { user: CurrentUser }) {
+function WorkspaceRoute({ user }: WorkspaceRouteProps) {
   const { organizationId } = useParams();
   if (!organizationId || !user.organizations.some((item) => item.id === organizationId)) {
     return <Navigate to="/" replace />;

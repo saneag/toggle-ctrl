@@ -6,14 +6,13 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, Check, LoaderCircle } from "lucide-react";
 import { toast } from "sonner";
 
+import type { SignUpFormValues } from "../types.js";
 import { signUp } from "../utils/sign-up.js";
 import { validateEmail } from "../utils/validate-email.js";
 import { getPasswordRequirements, validatePassword } from "../utils/validate-password.js";
 import { PasswordInput } from "./password-input.js";
 import { Button } from "./ui/button.js";
 import { Input } from "./ui/input.js";
-
-type SignUpFields = { name: string; email: string; password: string };
 
 export function SignUpForm() {
   const queryClient = useQueryClient();
@@ -26,11 +25,11 @@ export function SignUpForm() {
     handleSubmit,
     watch,
     formState: { errors },
-  } = useForm<SignUpFields>({ mode: "onChange", defaultValues: { email: invitation.email } });
+  } = useForm<SignUpFormValues>({ mode: "onChange", defaultValues: { email: invitation.email } });
   const password = watch("password", "");
   const passwordRequirements = getPasswordRequirements(password);
   const mutation = useMutation({
-    mutationFn: ({ name, email, password }: { name: string; email: string; password: string }) =>
+    mutationFn: ({ name, email, password }: SignUpFormValues) =>
       signUp(name, email, password, invitation.token),
     onSuccess: (user) => queryClient.setQueryData(["current-user"], user),
     onError: (error) => toast.error(error.message),

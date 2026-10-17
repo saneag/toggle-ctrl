@@ -37,6 +37,12 @@ Run commands from the repository root unless noted:
 
 Use TypeScript, two-space indentation, semicolons, double quotes, and trailing commas. Prettier uses a 100-character print width and sorts imports; ESLint enforces shared workspace rules. Name React components in PascalCase, other TypeScript modules in kebab-case, and tests `*.spec.ts` or `*.e2e-spec.ts`. Keep Prisma models and enums in focused, descriptively named `.prisma` files.
 
+Keep object types and interfaces in dedicated type files, grouped by domain or feature. Do not define
+component props, form values, API request/response shapes, or domain objects inline in function
+signatures or generic arguments. Avoid one catch-all types file; use focused files and import the
+types where they are needed. Leave inferred local values and third-party configuration objects
+inline when they are not reusable contracts.
+
 ## Testing
 
 Use Vitest for unit and web tests, Testing Library for React behavior, and Supertest for API integration. Name unit files `*.spec.ts`; place end-to-end specs in `packages/e2e/tests` with the `*.e2e-spec.ts` suffix. Run the relevant package test command while developing and the root command before submitting. No repository-wide coverage threshold is configured.
@@ -53,6 +59,8 @@ Copy `apps/api/.env.example` to the ignored `apps/api/.env` for local settings; 
 
 - Use React Router links and navigation for in-app routes so navigation does not trigger a full page reload.
 - Keep the home page focused on the list of workspaces the signed-in user can access. Keep the shared sidebar available on both the home page and workspace pages.
+- Keep the sidebar visually light and translucent, with the brand at the top and centered help and account panels at the bottom.
+- Let users search accessible workspaces when adding favorites. Show up to five favorites by default, allow expanding the list, and persist favorites per user.
 - A workspace page should show its members and each member's access role. Only show member management actions when the current user's role allows them.
 - Use `lucide-react` for interface icons. Do not use Unicode symbols as substitutes for icons; plain punctuation is fine when the design calls for it, such as a question mark inside a CSS-drawn circle.
 - Keep workspace page backgrounds consistent through the shared `AppPage` wrapper and the `--app-background` token in `apps/web/src/style.css`.

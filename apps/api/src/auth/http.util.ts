@@ -2,13 +2,15 @@ import { BadRequestException, ForbiddenException } from "@nestjs/common";
 
 import type { Request, Response } from "express";
 
+import type { JsonObject } from "./types/request-payloads.js";
+
 export const SESSION_COOKIE = "toggle_ctrl_session";
 
-export function readBody(body: unknown): Record<string, unknown> {
+export function readBody(body: unknown): JsonObject {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     throw new BadRequestException("Request body must be a JSON object");
   }
-  return body as Record<string, unknown>;
+  return body as JsonObject;
 }
 
 export function readId(value: unknown, label: string): string {
