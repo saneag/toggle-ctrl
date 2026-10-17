@@ -1,3 +1,5 @@
+import { LoaderCircle } from "lucide-react";
+
 import type { Member } from "../types.js";
 import { Card } from "./ui/card.js";
 
@@ -12,21 +14,21 @@ const initials = (name: string) =>
 export function MembersPanel({ members, isLoading }: { members: Member[]; isLoading: boolean }) {
   if (isLoading)
     return (
-      <Card className="text-muted-foreground flex min-h-48 flex-col items-center justify-center gap-3 p-8 text-center">
-        <span className="text-2xl">◌</span>
+      <Card className="border-border text-muted-foreground flex min-h-48 flex-col items-center justify-center gap-3 p-8 text-center">
+        <LoaderCircle aria-hidden="true" className="text-primary size-6 animate-spin" />
         <strong className="text-foreground text-base font-medium">Loading your people…</strong>
       </Card>
     );
   if (members.length === 0)
     return (
-      <Card className="text-muted-foreground flex min-h-48 flex-col items-center justify-center gap-3 p-8 text-center">
-        <span className="text-2xl">◌</span>
+      <Card className="border-border text-muted-foreground flex min-h-48 flex-col items-center justify-center gap-3 p-8 text-center">
+        <LoaderCircle aria-hidden="true" className="text-primary size-6 animate-spin" />
         <strong className="text-foreground text-base font-medium">Your team is taking shape</strong>
         <p className="text-sm">Invite a teammate to start collaborating here.</p>
       </Card>
     );
   return (
-    <Card className="overflow-hidden p-0">
+    <Card className="border-border overflow-hidden p-0">
       <div className="border-border text-muted-foreground grid grid-cols-[minmax(0,1fr)_7rem_6rem] gap-4 border-b px-5 py-3 text-[0.7rem] font-semibold tracking-wider">
         <span>MEMBER</span>
         <span>ROLE</span>

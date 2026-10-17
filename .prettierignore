@@ -1,0 +1,3 @@
+# Generated dependency lockfile and Playwright MCP snapshots
+pnpm-lock.yaml
+.playwright-mcp/

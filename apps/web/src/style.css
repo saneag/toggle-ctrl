@@ -4,6 +4,7 @@
 
 @theme inline {
   --color-background: var(--background);
+  --color-app-background: var(--app-background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -29,7 +30,8 @@
 
 :root {
   --radius: 0.625rem;
-  --background: #d7fff8;
+  --app-background: #f3f5f9;
+  --background: #181930;
   --foreground: #181930;
   --card: #ffffff;
   --card-foreground: #181930;

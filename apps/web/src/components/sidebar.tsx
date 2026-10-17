@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 
+import { Link } from "react-router-dom";
+
+import { ChevronRight, Ellipsis, Plus } from "lucide-react";
+
 import type { CurrentUser } from "../types.js";
 import { BrandMark } from "./brand-mark.js";
 import { Button } from "./ui/button.js";
@@ -42,11 +46,15 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
   }, [isAccountMenuOpen]);
 
   return (
-    <aside className="border-border bg-card relative flex w-full flex-col border-b p-4 md:fixed md:inset-y-0 md:left-0 md:z-20 md:w-60 md:border-r md:border-b-0">
-      <div className="mb-8 flex items-center gap-3 px-1 md:mb-10">
+    <aside className="border-border bg-card text-card-foreground relative flex w-full flex-col border-b p-4 md:fixed md:inset-y-0 md:left-0 md:z-20 md:w-60 md:border-r md:border-b-0">
+      <Link
+        to="/"
+        aria-label="Toggle Ctrl home"
+        className="mb-8 flex items-center gap-3 px-1 md:mb-10"
+      >
         <BrandMark />
         <span className="text-base font-semibold tracking-tight">Toggle Ctrl</span>
-      </div>
+      </Link>
       <div className="text-muted-foreground mb-2 flex items-center justify-between px-1 text-[11px] font-semibold tracking-wider">
         WORKSPACES
         <span title={canCreate ? undefined : workspaceLimitMessage}>
@@ -57,7 +65,7 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
             aria-label="Create workspace"
             disabled={!canCreate}
           >
-            ＋
+            <Plus aria-hidden="true" className="size-4" />
           </Button>
         </span>
       </div>
@@ -74,13 +82,15 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
               {org.name.slice(0, 1).toUpperCase()}
             </span>
             <span className="max-w-40 truncate font-medium">{org.name}</span>
-            {activeId === org.id && <span className="text-muted-foreground ml-auto">›</span>}
+            {activeId === org.id && (
+              <ChevronRight aria-hidden="true" className="text-muted-foreground ml-auto size-4" />
+            )}
           </button>
         ))}
       </nav>
       <div className="mt-auto hidden md:block">
         <div className="border-border text-muted-foreground mb-4 flex items-center gap-3 border-b px-1 pb-4 text-sm">
-          <span className="border-border grid size-7 place-items-center rounded-full border">
+          <span className="border-border text-muted-foreground grid size-7 place-items-center rounded-full border text-sm font-medium">
             ?
           </span>
           <span>
@@ -107,7 +117,7 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
             aria-expanded={isAccountMenuOpen}
             aria-haspopup="menu"
           >
-            ⋯
+            <Ellipsis aria-hidden="true" className="size-4" />
           </Button>
           {isAccountMenuOpen && (
             <div

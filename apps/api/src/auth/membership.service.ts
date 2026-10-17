@@ -21,7 +21,7 @@ export class MembershipService {
   ) {}
 
   async list(actor: SessionUser, organizationId: string) {
-    await this.requireAdmin(actor.id, organizationId);
+    await this.requireMembership(actor.id, organizationId);
     return this.prisma.membership.findMany({
       where: { organizationId },
       include: { user: { select: { id: true, email: true, name: true } } },
@@ -77,11 +77,16 @@ export class MembershipService {
     return { membership, setupRequired: true };
   }
 
-  private async requireAdmin(userId: string, organizationId: string): Promise<void> {
+  private async requireMembership(userId: string, organizationId: string) {
     const membership = await this.prisma.membership.findUnique({
       where: { organizationId_userId: { organizationId, userId } },
     });
     if (!membership) throw new NotFoundException("Organization not found");
+    return membership;
+  }
+
+  private async requireAdmin(userId: string, organizationId: string): Promise<void> {
+    const membership = await this.requireMembership(userId, organizationId);
     if (membership.role !== "ADMIN")
       throw new ForbiddenException("Only organization admins can manage members");
   }

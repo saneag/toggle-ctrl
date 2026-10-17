@@ -48,3 +48,13 @@ Recent commits use concise imperative subjects, sometimes with Conventional Comm
 ## Configuration and Data
 
 Copy `apps/api/.env.example` to the ignored `apps/api/.env` for local settings; never commit secrets. Add schema changes as Prisma migrations and document any new required environment variables.
+
+## UI and Navigation Conventions
+
+- Use React Router links and navigation for in-app routes so navigation does not trigger a full page reload.
+- Keep the home page focused on the list of workspaces the signed-in user can access. Keep the shared sidebar available on both the home page and workspace pages.
+- A workspace page should show its members and each member's access role. Only show member management actions when the current user's role allows them.
+- Use `lucide-react` for interface icons. Do not use Unicode symbols as substitutes for icons; plain punctuation is fine when the design calls for it, such as a question mark inside a CSS-drawn circle.
+- Keep workspace page backgrounds consistent through the shared `AppPage` wrapper and the `--app-background` token in `apps/web/src/style.css`.
+- Avoid adding decorative footers or extra home-page content that distracts from the workspace list.
+- Keep commits compact and group related changes together.

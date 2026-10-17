@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 
 import { useMutation } from "@tanstack/react-query";
+import { ArrowUpRight, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import { createInvitation } from "../utils/create-invitation.js";
@@ -43,10 +44,10 @@ export function InviteForm({
   );
 
   return (
-    <Card className="space-y-5 p-5 sm:p-6">
+    <Card className="border-border space-y-5 p-5 sm:p-6">
       <div className="flex items-center gap-3">
         <div className="bg-secondary text-primary flex size-10 items-center justify-center rounded-lg text-xl">
-          ＋
+          <Plus aria-hidden="true" className="size-5" />
         </div>
         <div>
           <h3 className="text-foreground font-semibold">Bring someone in</h3>
@@ -86,7 +87,7 @@ export function InviteForm({
         </Select>
         <Button disabled={mutation.isPending}>
           {mutation.isPending ? "Sending…" : "Send invite"}
-          <span>↗</span>
+          <ArrowUpRight aria-hidden="true" className="size-4" />
         </Button>
       </form>
     </Card>

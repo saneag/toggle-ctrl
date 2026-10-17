@@ -1,6 +1,9 @@
 import { type FormEvent, useState } from "react";
 
+import { Link, useNavigate } from "react-router-dom";
+
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowUpRight, RefreshCw, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 import type { CurrentUser } from "../types.js";
@@ -9,6 +12,7 @@ import { createOrganization } from "../utils/create-organization.js";
 import { getInvitations } from "../utils/get-invitations.js";
 import { getMembers } from "../utils/get-members.js";
 import { signOut } from "../utils/sign-out.js";
+import { AppPage } from "./app-page.js";
 import { InviteForm } from "./invite-form.js";
 import { MembersPanel } from "./members-panel.js";
 import { Sidebar, workspaceLimitMessage } from "./sidebar.js";
@@ -16,8 +20,15 @@ import { Badge } from "./ui/badge.js";
 import { Button } from "./ui/button.js";
 import { Input } from "./ui/input.js";
 
-export function Dashboard({ user }: { user: CurrentUser }) {
-  const [activeId, setActiveId] = useState(user.organizations[0]?.id ?? "");
+export function Dashboard({
+  user,
+  organizationId = "",
+}: {
+  user: CurrentUser;
+  organizationId?: string;
+}) {
+  const navigate = useNavigate();
+  const activeId = organizationId;
   const [notice, setNotice] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [workspaceName, setWorkspaceName] = useState("");
@@ -30,7 +41,7 @@ export function Dashboard({ user }: { user: CurrentUser }) {
   const membersQuery = useQuery({
     queryKey: ["members", activeId],
     queryFn: () => getMembers(activeId),
-    enabled: Boolean(activeId && isAdmin),
+    enabled: Boolean(activeId),
     retry: false,
   });
   const invitationsQuery = useQuery({
@@ -50,7 +61,7 @@ export function Dashboard({ user }: { user: CurrentUser }) {
             organizations: [...current.organizations, { ...created, role: "ADMIN" }],
           },
       );
-      setActiveId(created.id);
+      navigate("/workspaces/" + created.id);
       setIsCreateDialogOpen(false);
       setWorkspaceName("");
       toast.success("New workspace was created.");
@@ -87,11 +98,11 @@ export function Dashboard({ user }: { user: CurrentUser }) {
   }
 
   return (
-    <div className="bg-background text-foreground min-h-svh md:flex">
+    <AppPage className="md:flex">
       <Sidebar
         user={user}
         activeId={activeId}
-        onSelect={setActiveId}
+        onSelect={(id) => navigate("/workspaces/" + id)}
         onCreate={addOrganization}
         canCreate={canCreateWorkspace}
         onLogout={() => signOutMutation.mutate()}
@@ -99,9 +110,12 @@ export function Dashboard({ user }: { user: CurrentUser }) {
       <main className="min-w-0 flex-1 md:ml-60">
         <header className="border-border bg-card text-muted-foreground sticky top-0 z-10 flex h-14 items-center justify-between border-b px-4 text-sm sm:px-8">
           <div>
-            <span className="text-muted-foreground text-xs font-semibold tracking-wider">
+            <Link
+              to="/"
+              className="text-muted-foreground hover:text-foreground text-xs font-semibold tracking-wider"
+            >
               WORKSPACE
-            </span>
+            </Link>
             <span className="text-border mx-3">/</span>
             <strong className="text-foreground font-medium">
               {organization?.name ?? "Overview"}
@@ -121,7 +135,8 @@ export function Dashboard({ user }: { user: CurrentUser }) {
                 YOUR TEAM
               </p>
               <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                Good morning, {user.name.split(" ")[0]} <span>✳</span>
+                Good morning, {user.name.split(" ")[0]}{" "}
+                <Sparkles aria-hidden="true" className="text-primary inline size-5" />
               </h1>
               <p className="text-muted-foreground mt-2 text-sm">
                 {organization
@@ -130,8 +145,13 @@ export function Dashboard({ user }: { user: CurrentUser }) {
               </p>
             </div>
             {organization && (
-              <Button variant="outline" className="shrink-0" onClick={() => membersQuery.refetch()}>
-                ↻ Refresh
+              <Button
+                variant="outline"
+                className="border-border bg-card text-foreground hover:bg-accent shrink-0"
+                onClick={() => membersQuery.refetch()}
+              >
+                <RefreshCw aria-hidden="true" className="mr-2 size-4" />
+                Refresh
               </Button>
             )}
           </div>
@@ -167,7 +187,7 @@ export function Dashboard({ user }: { user: CurrentUser }) {
                       onClick={() => acceptMutation.mutate(item.id)}
                       disabled={acceptMutation.isPending}
                     >
-                      Accept ↗
+                      Accept <ArrowUpRight aria-hidden="true" className="ml-1 inline size-4" />
                     </Button>
                   </div>
                 ))}
@@ -220,10 +240,6 @@ export function Dashboard({ user }: { user: CurrentUser }) {
               </span>
             </div>
           )}
-          <footer className="border-border text-muted-foreground mt-14 flex justify-between border-t pt-4 text-xs">
-            <span className="font-semibold tracking-wide">TOGGLE CTRL</span>
-            <span>Feature management</span>
-          </footer>
         </section>
       </main>
       {isCreateDialogOpen && (
@@ -273,6 +289,6 @@ export function Dashboard({ user }: { user: CurrentUser }) {
           </section>
         </div>
       )}
-    </div>
+    </AppPage>
   );
 }

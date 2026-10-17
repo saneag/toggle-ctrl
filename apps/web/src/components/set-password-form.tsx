@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { ArrowUpRight } from "lucide-react";
 import { toast } from "sonner";
 
 import { setPassword } from "../utils/set-password.js";
@@ -70,7 +71,7 @@ export function SetPasswordForm({ token, email }: { token: string; email: string
       </div>
       <Button className="h-11 w-full justify-between px-4 text-sm" disabled={mutation.isPending}>
         {mutation.isPending ? "Saving password…" : "Set password"}
-        <span>↗</span>
+        <ArrowUpRight aria-hidden="true" className="size-4" />
       </Button>
     </form>
   );
