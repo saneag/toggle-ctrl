@@ -53,6 +53,9 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsName, setSettingsName] = useState("");
   const [settingsIcon, setSettingsIcon] = useState<WorkspaceIcon>("flag");
+  const [settingsErrorOrganizationId, setSettingsErrorOrganizationId] = useState<string | null>(
+    null,
+  );
   const queryClient = useQueryClient();
   const organization = user.organizations.find((item) => item.id === activeId);
   const isAdmin = organization?.role === "ADMIN";
@@ -104,9 +107,13 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
           },
       );
       setIsSettingsOpen(false);
+      setSettingsErrorOrganizationId(null);
       toast.success("Workspace settings saved.");
     },
-    onError: (error) => setNotice(error.message),
+    onError: (error) => {
+      setSettingsErrorOrganizationId(activeId);
+      setNotice(error.message);
+    },
   });
   const acceptMutation = useMutation({
     mutationFn: acceptInvitation,
@@ -124,6 +131,25 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
     onSuccess: () => queryClient.setQueryData(["current-user"], null),
     onError: (error) => setNotice(error.message),
   });
+  const isWorkspaceSettingsDirty = Boolean(
+    isSettingsOpen &&
+    organization &&
+    (settingsName.trim() !== organization.name || settingsIcon !== (organization.icon || "flag")),
+  );
+  const saveStatus = settingsMutation.isPending
+    ? "Saving…"
+    : settingsMutation.isError && settingsErrorOrganizationId === activeId
+      ? "Not saved"
+      : isWorkspaceSettingsDirty
+        ? "Unsaved changes"
+        : "Saved";
+  const saveStatusColor = settingsMutation.isPending
+    ? "bg-amber-500"
+    : settingsMutation.isError && settingsErrorOrganizationId === activeId
+      ? "bg-destructive"
+      : isWorkspaceSettingsDirty
+        ? "bg-amber-500"
+        : "bg-primary";
 
   function addOrganization() {
     setWorkspaceName("");
@@ -161,11 +187,12 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
               {organization?.name ?? "Overview"}
             </strong>
           </div>
-          <div className="text-muted-foreground flex items-center gap-2 text-xs">
-            <span className="bg-primary size-2 rounded-full" /> Saved
-            <div className="bg-secondary text-secondary-foreground ml-3 grid size-8 place-items-center rounded-full text-sm font-semibold">
-              {user.name.slice(0, 1).toUpperCase()}
-            </div>
+          <div
+            aria-live="polite"
+            className="text-muted-foreground flex items-center gap-2 text-xs"
+            role="status"
+          >
+            <span className={`${saveStatusColor} size-2 rounded-full`} /> {saveStatus}
           </div>
         </header>
         <section className="mx-auto w-full max-w-5xl p-5 sm:p-8">
@@ -249,6 +276,8 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                       variant="outline"
                       size="sm"
                       onClick={() => {
+                        settingsMutation.reset();
+                        setSettingsErrorOrganizationId(null);
                         setSettingsName(organization.name);
                         setSettingsIcon((organization.icon || "flag") as WorkspaceIcon);
                         setIsSettingsOpen(true);
