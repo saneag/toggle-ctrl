@@ -22,6 +22,7 @@ export function InviteForm({ organizationId, onInvited }: InviteFormProps) {
     watch,
     formState: { errors },
   } = useForm<InvitationFormValues>({ mode: "onBlur", defaultValues: { role: "VIEWER" } });
+  const email = watch("email");
   const mutation = useMutation({
     mutationFn: ({ email, role }: InvitationFormValues) =>
       createInvitation(organizationId, email, role),
@@ -33,7 +34,11 @@ export function InviteForm({ organizationId, onInvited }: InviteFormProps) {
   });
 
   const submit = handleSubmit(
-    ({ email, role }) => mutation.mutate({ email: email.trim(), role }),
+    ({ email, role }) => {
+      const normalizedEmail = email.trim();
+      if (!normalizedEmail) return;
+      mutation.mutate({ email: normalizedEmail, role });
+    },
     (invalidFields) => toast.error(invalidFields.email?.message ?? "Check the email address."),
   );
 
@@ -59,7 +64,9 @@ export function InviteForm({ organizationId, onInvited }: InviteFormProps) {
             placeholder="Add a teammate by email"
             aria-invalid={Boolean(errors.email)}
             aria-describedby={errors.email ? "invite-email-error" : undefined}
-            {...register("email", { validate: validateEmail })}
+            {...register("email", {
+              validate: (value) => !value.trim() || validateEmail(value),
+            })}
           />
           {errors.email && (
             <p className="text-destructive text-xs" id="invite-email-error">
@@ -71,15 +78,29 @@ export function InviteForm({ organizationId, onInvited }: InviteFormProps) {
           value={watch("role")}
           onValueChange={(role) => setValue("role", role, { shouldValidate: true })}
         >
-          <SelectTrigger className="w-full sm:w-36">
+          <SelectTrigger className="border-border bg-card text-foreground hover:bg-secondary w-full shadow-sm sm:w-36">
             <SelectValue />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="VIEWER">Viewer</SelectItem>
-            <SelectItem value="MANAGER">Manager</SelectItem>
+          <SelectContent
+            align="end"
+            className="border-border bg-card text-foreground rounded-lg p-1 shadow-lg"
+            position="popper"
+          >
+            <SelectItem
+              className="focus:bg-secondary focus:text-foreground cursor-pointer rounded-md py-2"
+              value="VIEWER"
+            >
+              Viewer
+            </SelectItem>
+            <SelectItem
+              className="focus:bg-secondary focus:text-foreground cursor-pointer rounded-md py-2"
+              value="MANAGER"
+            >
+              Manager
+            </SelectItem>
           </SelectContent>
         </Select>
-        <Button disabled={mutation.isPending}>
+        <Button disabled={mutation.isPending || !email?.trim()}>
           {mutation.isPending ? "Sending…" : "Send invite"}
           <ArrowUpRight aria-hidden="true" className="size-4" />
         </Button>

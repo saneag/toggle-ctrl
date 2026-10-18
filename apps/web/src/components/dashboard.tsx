@@ -201,7 +201,7 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
         onLogout={() => signOutMutation.mutate()}
       />
       <main className="min-w-0 flex-1 md:ml-[264px]">
-        <header className="border-border bg-card text-muted-foreground sticky top-0 z-10 flex h-14 items-center justify-between border-b px-4 text-sm sm:px-8">
+        <header className="text-muted-foreground sticky top-3 z-10 mx-3 mt-3 flex h-14 items-center justify-between rounded-2xl border border-white/80 bg-white/55 px-4 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_8px_28px_rgba(38,163,142,0.10)] backdrop-blur-2xl backdrop-saturate-150 sm:px-8">
           <div>
             <Link
               to="/"
