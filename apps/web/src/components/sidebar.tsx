@@ -18,7 +18,8 @@ export const workspaceLimitMessage =
   "Your free tier includes only one workspace. Please upgrade to Pro for unlimited workspaces.";
 
 export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogout }: SidebarProps) {
-  const { favoriteIds, isFavoritePending, toggleFavorite } = useWorkspaceFavorites(user.id);
+  const { favoriteIds, favoriteWorkspaces, isFavoritePending, toggleFavorite } =
+    useWorkspaceFavorites(user.id);
   const [isAddFavoriteOpen, setIsAddFavoriteOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
@@ -38,8 +39,8 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
   }, [isAddFavoriteOpen, searchQuery]);
 
   const workspaceSearch = useQuery({
-    queryKey: ["workspace-search", "sidebar-favorites", debouncedSearchQuery, favoriteIds],
-    queryFn: () => searchWorkspaces(debouncedSearchQuery, { scopes: ["favorites"], favoriteIds }),
+    queryKey: ["workspace-search", "sidebar-favorites", debouncedSearchQuery],
+    queryFn: () => searchWorkspaces(debouncedSearchQuery, { scopes: ["favorites"] }),
     enabled: isAddFavoriteOpen && favoriteIds.length > 5,
     staleTime: 30_000,
   });
@@ -65,11 +66,9 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
     };
   }, [isAccountMenuOpen]);
 
-  const favorites = favoriteIds
-    .map((favoriteId) => user.organizations.find((organization) => organization.id === favoriteId))
-    .filter((organization) => organization !== undefined);
+  const favorites = favoriteWorkspaces;
   const visibleFavorites = showAllFavorites ? favorites : favorites.slice(0, 5);
-  const searchedWorkspaces = workspaceSearch.data ?? [];
+  const searchedWorkspaces = workspaceSearch.data?.items ?? [];
 
   useEffect(() => {
     if (!isAddFavoriteOpen || favoriteIds.length > 5) return;

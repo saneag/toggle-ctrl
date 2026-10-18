@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Headers, Param, Post, Req } from "@nestjs/common";
+import { Body, Controller, Get, Headers, Param, Post, Query, Req } from "@nestjs/common";
 
 import type { Request } from "express";
 
@@ -14,9 +14,19 @@ export class MembershipController {
   ) {}
 
   @Get()
-  async list(@Req() request: Request, @Param("organizationId") organizationId: string) {
+  async list(
+    @Req() request: Request,
+    @Param("organizationId") organizationId: string,
+    @Query("search") search = "",
+    @Query("roles") roles = "",
+    @Query("statuses") statuses = "",
+  ) {
     const user = await this.sessions.authenticate(readSessionCookie(request));
-    return this.members.list(user, readId(organizationId, "Organization ID"));
+    return this.members.list(user, readId(organizationId, "Organization ID"), {
+      search,
+      roles,
+      statuses,
+    });
   }
 
   @Post()

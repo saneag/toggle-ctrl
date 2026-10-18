@@ -1,4 +1,4 @@
-import { type FormEvent, useRef, useState } from "react";
+import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { Link, useNavigate } from "react-router-dom";
 
@@ -6,12 +6,19 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, Pencil, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
-import type { CurrentUser } from "../types.js";
-import type { WorkspaceColor, WorkspaceIcon } from "../types.js";
+import type {
+  MemberRole,
+  MemberStatus,
+  Organization,
+  WorkspaceColor,
+  WorkspaceIcon,
+} from "../types.js";
 import { acceptInvitation } from "../utils/accept-invitation.js";
 import { createOrganization } from "../utils/create-organization.js";
 import { getInvitations } from "../utils/get-invitations.js";
 import { getMembers } from "../utils/get-members.js";
+import { getOrganizationSummary } from "../utils/get-organization-summary.js";
+import { getOrganization } from "../utils/get-organization.js";
 import { signOut } from "../utils/sign-out.js";
 import { updateOrganization } from "../utils/update-organization.js";
 import { AppPage } from "./app-page.js";
@@ -45,16 +52,50 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
   const [settingsErrorOrganizationId, setSettingsErrorOrganizationId] = useState<string | null>(
     null,
   );
+  const [memberSearchQuery, setMemberSearchQuery] = useState("");
+  const [debouncedMemberSearch, setDebouncedMemberSearch] = useState("");
+  const [selectedMemberRoles, setSelectedMemberRoles] = useState<MemberRole[]>([]);
+  const [selectedMemberStatuses, setSelectedMemberStatuses] = useState<MemberStatus[]>([]);
   const refreshIconRef = useRef<SVGSVGElement>(null);
   const queryClient = useQueryClient();
-  const organization = user.organizations.find((item) => item.id === activeId);
+  const organizationQuery = useQuery({
+    queryKey: ["organization", activeId],
+    queryFn: () => getOrganization(activeId),
+    enabled: Boolean(activeId),
+    retry: false,
+  });
+  const organization = organizationQuery.data;
   const isAdmin = organization?.role === "ADMIN";
-  const hasAdminWorkspace = user.organizations.some((item) => item.role === "ADMIN");
+  const organizationSummaryQuery = useQuery({
+    queryKey: ["organization-summary"],
+    queryFn: getOrganizationSummary,
+    staleTime: 30_000,
+  });
+  const hasAdminWorkspace = (organizationSummaryQuery.data?.admin ?? 0) > 0;
   const canCreateWorkspace = user.plan === "PRO" || !hasAdminWorkspace;
 
+  useEffect(() => {
+    const timeout = window.setTimeout(
+      () => setDebouncedMemberSearch(memberSearchQuery.trim()),
+      350,
+    );
+    return () => window.clearTimeout(timeout);
+  }, [memberSearchQuery]);
+
   const membersQuery = useQuery({
-    queryKey: ["members", activeId],
-    queryFn: () => getMembers(activeId),
+    queryKey: [
+      "members",
+      activeId,
+      debouncedMemberSearch,
+      selectedMemberRoles,
+      selectedMemberStatuses,
+    ],
+    queryFn: () =>
+      getMembers(activeId, {
+        search: debouncedMemberSearch,
+        roles: selectedMemberRoles,
+        statuses: selectedMemberStatuses,
+      }),
     enabled: Boolean(activeId),
     retry: false,
   });
@@ -67,14 +108,8 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
   const organizationMutation = useMutation({
     mutationFn: createOrganization,
     onSuccess: async (created) => {
-      queryClient.setQueryData<CurrentUser>(
-        ["current-user"],
-        (current) =>
-          current && {
-            ...current,
-            organizations: [...current.organizations, { ...created, role: "ADMIN" }],
-          },
-      );
+      void queryClient.invalidateQueries({ queryKey: ["organization-summary"] });
+      void queryClient.invalidateQueries({ queryKey: ["workspace-search"] });
       navigate("/workspaces/" + created.id);
       setIsCreateDialogOpen(false);
       setWorkspaceName("");
@@ -90,16 +125,10 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
         color: settingsColor,
       }),
     onSuccess: (updated) => {
-      queryClient.setQueryData<CurrentUser>(
-        ["current-user"],
-        (current) =>
-          current && {
-            ...current,
-            organizations: current.organizations.map((item) =>
-              item.id === updated.id ? { ...item, ...updated } : item,
-            ),
-          },
+      queryClient.setQueryData<Organization>(["organization", activeId], (current) =>
+        current ? { ...current, ...updated } : current,
       );
+      void queryClient.invalidateQueries({ queryKey: ["workspace-search"] });
       setIsSettingsOpen(false);
       setSettingsErrorOrganizationId(null);
       toast.success("Workspace settings saved.");
@@ -115,6 +144,8 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["invitations"] }),
         queryClient.invalidateQueries({ queryKey: ["current-user"] }),
+        queryClient.invalidateQueries({ queryKey: ["organization-summary"] }),
+        queryClient.invalidateQueries({ queryKey: ["workspace-search"] }),
       ]);
       setNotice("Invitation accepted. Switch to the new workspace in the sidebar.");
     },
@@ -294,7 +325,16 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                   </Button>
                 </div>
               </div>
-              <MembersPanel members={membersQuery.data ?? []} isLoading={membersQuery.isPending} />
+              <MembersPanel
+                members={membersQuery.data ?? []}
+                isLoading={membersQuery.isPending}
+                searchQuery={memberSearchQuery}
+                onSearchQueryChange={setMemberSearchQuery}
+                selectedRoles={selectedMemberRoles}
+                onSelectedRolesChange={setSelectedMemberRoles}
+                selectedStatuses={selectedMemberStatuses}
+                onSelectedStatusesChange={setSelectedMemberStatuses}
+              />
               {isAdmin && (
                 <div className="mt-3">
                   <InviteForm

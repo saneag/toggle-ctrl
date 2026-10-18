@@ -38,11 +38,26 @@ export type Organization = {
   color: WorkspaceColor;
   role: string;
 };
+export type OrganizationSummary = {
+  total: number;
+  admin: number;
+  assigned: number;
+  adminUnfavorited: number;
+  assignedUnfavorited: number;
+  favorites: number;
+};
 export type MemberUser = { id: string; name: string; email: string };
-export type MemberRoleFilter = "ALL" | "ADMIN" | "MANAGER" | "VIEWER";
+export type MemberRole = "ADMIN" | "MANAGER" | "VIEWER";
+export type MemberStatus = "ACTIVE" | "INVITED";
+export type MemberDirectoryQuery = {
+  search: string;
+  roles: MemberRole[];
+  statuses: MemberStatus[];
+};
 export type Member = {
   id: string;
   role: string;
+  status: MemberStatus;
   user: MemberUser;
 };
 export type CreateOrganizationResponse = Pick<Organization, "id" | "name" | "icon" | "color">;

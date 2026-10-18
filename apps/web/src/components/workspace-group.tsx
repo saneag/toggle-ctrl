@@ -1,4 +1,4 @@
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 
 import { Button } from "./ui/button.js";
 import { WorkspaceCard } from "./workspace-card.js";
@@ -11,6 +11,11 @@ export function WorkspaceGroup({
   workspaces,
   emptyMessage,
   isCollapsed,
+  workspaceCount,
+  currentPage,
+  totalPages,
+  onPageChange,
+  isLoading = false,
   onToggle,
   isFavoritePending = false,
   onToggleFavorite,
@@ -36,16 +41,33 @@ export function WorkspaceGroup({
                 <span className="text-muted-foreground text-xs font-normal">{description}</span>
               )}
             </span>
-            <ChevronDown
-              aria-hidden="true"
-              className={`text-muted-foreground size-4 shrink-0 transition-transform ${isCollapsed ? "-rotate-90" : ""}`}
-            />
+            <span className="text-muted-foreground flex shrink-0 items-center gap-2">
+              <span
+                aria-label={`${workspaceCount} workspaces`}
+                className={`bg-muted flex h-6 items-center justify-center rounded-full text-xs font-medium tabular-nums ${
+                  workspaceCount >= 100 ? "min-w-6 px-2" : "w-6"
+                }`}
+              >
+                {workspaceCount}
+              </span>
+              <ChevronDown
+                aria-hidden="true"
+                className={`size-4 transition-transform ${isCollapsed ? "-rotate-90" : ""}`}
+              />
+            </span>
           </Button>
         </h2>
       </div>
       {!isCollapsed && (
         <div id={contentId}>
-          {workspaces.length === 0 ? (
+          {isLoading ? (
+            <p
+              className="border-border bg-card text-muted-foreground rounded-xl border px-4 py-5 text-sm"
+              role="status"
+            >
+              Loading workspaces…
+            </p>
+          ) : workspaces.length === 0 ? (
             <p className="border-border bg-card text-muted-foreground rounded-xl border px-4 py-5 text-sm">
               {emptyMessage}
             </p>
@@ -79,6 +101,33 @@ export function WorkspaceGroup({
                 </li>
               ))}
             </ul>
+          )}
+          {totalPages > 1 && (
+            <div className="mt-3 flex items-center justify-end gap-2">
+              <span className="text-muted-foreground mr-1 text-xs">
+                Page {currentPage} of {totalPages}
+              </span>
+              <Button
+                aria-label={`Previous ${title} page`}
+                disabled={currentPage <= 1}
+                onClick={() => onPageChange(currentPage - 1)}
+                size="icon-sm"
+                type="button"
+                variant="outline"
+              >
+                <ChevronLeft aria-hidden="true" className="size-4" />
+              </Button>
+              <Button
+                aria-label={`Next ${title} page`}
+                disabled={currentPage >= totalPages}
+                onClick={() => onPageChange(currentPage + 1)}
+                size="icon-sm"
+                type="button"
+                variant="outline"
+              >
+                <ChevronRight aria-hidden="true" className="size-4" />
+              </Button>
+            </div>
           )}
         </div>
       )}

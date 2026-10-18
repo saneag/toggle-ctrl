@@ -30,21 +30,31 @@ export class OrganizationController {
     @Req() request: Request,
     @Query("search") search = "",
     @Query("scopes") scopes = "",
-    @Query("favoriteIds") favoriteIds = "",
+    @Query("excludeFavorites") excludeFavorites = "false",
+    @Query("page") page = "1",
+    @Query("pageSize") pageSize = "50",
   ) {
     const user = await this.sessions.authenticate(readSessionCookie(request));
     return this.organizations.search(
       user.id,
       search,
       scopes ? scopes.split(",").filter(Boolean) : [],
-      favoriteIds ? favoriteIds.split(",").filter(Boolean) : [],
+      excludeFavorites === "true",
+      Number(page),
+      Number(pageSize),
     );
   }
 
-  @Get("favorites")
-  async getFavorites(@Req() request: Request) {
+  @Get("summary")
+  async getSummary(@Req() request: Request) {
     const user = await this.sessions.authenticate(readSessionCookie(request));
-    return this.organizations.getFavoriteIds(user.id);
+    return this.organizations.getSummary(user.id);
+  }
+
+  @Get(":organizationId")
+  async getById(@Req() request: Request, @Param("organizationId") organizationId: string) {
+    const user = await this.sessions.authenticate(readSessionCookie(request));
+    return this.organizations.getById(user.id, organizationId);
   }
 
   @Put("favorites/:organizationId")

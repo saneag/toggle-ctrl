@@ -38,7 +38,7 @@ export class SessionService {
     const session = await this.prisma.session.findUnique({
       where: { tokenHash: hashToken(token) },
       include: {
-        user: { include: { memberships: { include: { organization: true } } } },
+        user: { select: { id: true, email: true, name: true, plan: true } },
       },
     });
 
@@ -54,13 +54,6 @@ export class SessionService {
       plan: session.user.plan,
       sessionId: session.id,
       csrfHash: session.csrfHash,
-      memberships: session.user.memberships.map((item) => ({
-        organizationId: item.organizationId,
-        organizationName: item.organization.name,
-        organizationIcon: item.organization.icon,
-        organizationColor: item.organization.color,
-        role: item.role,
-      })),
     };
   }
 
@@ -93,7 +86,6 @@ export class SessionService {
         email: true,
         name: true,
         plan: true,
-        memberships: { include: { organization: true } },
       },
     });
 
@@ -102,13 +94,6 @@ export class SessionService {
       email: user.email,
       name: user.name,
       plan: user.plan,
-      organizations: user.memberships.map((item) => ({
-        id: item.organizationId,
-        name: item.organization.name,
-        icon: item.organization.icon,
-        color: item.organization.color,
-        role: item.role,
-      })),
     };
   }
 }

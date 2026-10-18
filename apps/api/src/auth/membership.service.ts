@@ -1,4 +1,9 @@
-import { ForbiddenException, Injectable, NotFoundException } from "@nestjs/common";
+import {
+  BadRequestException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 
 import { PrismaService } from "../prisma/prisma.service.js";
 import { EmailService } from "./email.service.js";
@@ -9,6 +14,7 @@ import {
   readMemberRole,
   readRequiredText,
 } from "./security.util.js";
+import type { MemberDirectoryFilters, MemberRole, MemberStatus } from "./types/member-directory.js";
 import type { AddMemberInput } from "./types/request-payloads.js";
 import type { SessionUser } from "./types/session-user.js";
 
@@ -21,13 +27,78 @@ export class MembershipService {
     private readonly email: EmailService,
   ) {}
 
-  async list(actor: SessionUser, organizationId: string) {
+  async list(actor: SessionUser, organizationId: string, filters: MemberDirectoryFilters) {
     await this.requireMembership(actor.id, organizationId);
-    return this.prisma.membership.findMany({
-      where: { organizationId },
-      include: { user: { select: { id: true, email: true, name: true } } },
-      orderBy: { createdAt: "asc" },
-    });
+    const search = filters.search.trim();
+    if (search.length > 120)
+      throw new BadRequestException("Member search must be 120 characters or fewer");
+
+    const roles = this.parseFilters<MemberRole>(
+      filters.roles,
+      ["ADMIN", "MANAGER", "VIEWER"],
+      "role",
+    );
+    const statuses = this.parseFilters<MemberStatus>(
+      filters.statuses,
+      ["ACTIVE", "INVITED"],
+      "status",
+    );
+    const includeActive = statuses.length === 0 || statuses.includes("ACTIVE");
+    const includeInvited = statuses.length === 0 || statuses.includes("INVITED");
+    const roleFilter = roles.length > 0 ? { in: roles } : undefined;
+    const searchFilter = search
+      ? {
+          user: {
+            is: {
+              OR: [
+                { name: { contains: search, mode: "insensitive" as const } },
+                { email: { contains: search, mode: "insensitive" as const } },
+              ],
+            },
+          },
+        }
+      : {};
+    const [memberships, invitations] = await Promise.all([
+      includeActive
+        ? this.prisma.membership.findMany({
+            where: { organizationId, ...(roleFilter ? { role: roleFilter } : {}), ...searchFilter },
+            include: { user: { select: { id: true, email: true, name: true } } },
+            orderBy: { createdAt: "asc" },
+          })
+        : Promise.resolve([]),
+      includeInvited
+        ? this.prisma.invitation.findMany({
+            where: {
+              organizationId,
+              acceptedAt: null,
+              expiresAt: { gt: new Date() },
+              ...(roleFilter ? { role: roleFilter } : {}),
+              ...(search ? { email: { contains: search, mode: "insensitive" as const } } : {}),
+            },
+            select: { id: true, email: true, role: true, createdAt: true },
+          })
+        : Promise.resolve([]),
+    ]);
+    return [
+      ...memberships.map((membership) => ({ ...membership, status: "ACTIVE" as const })),
+      ...invitations.map((invitation) => ({
+        id: invitation.id,
+        role: invitation.role,
+        status: "INVITED" as const,
+        user: { id: invitation.id, email: invitation.email, name: invitation.email },
+      })),
+    ].sort((left, right) => left.user.name.localeCompare(right.user.name));
+  }
+
+  private parseFilters<T extends string>(value: string, allowed: readonly T[], label: string): T[] {
+    const values = value
+      .split(",")
+      .map((item) => item.trim().toUpperCase())
+      .filter(Boolean);
+    if (values.some((item) => !allowed.includes(item as T))) {
+      throw new BadRequestException(`Invalid member ${label} filter`);
+    }
+    return [...new Set(values as T[])];
   }
 
   async add(actor: SessionUser, organizationId: string, input: AddMemberInput) {

@@ -1,11 +1,8 @@
-import type { Organization } from "./workspace.js";
-
 export type CurrentUser = {
   id: string;
   name: string;
   email: string;
   plan: "FREE" | "PRO";
-  organizations: Organization[];
 };
 
 export type AuthenticatedUserResponse = { user: CurrentUser; csrfToken: string };

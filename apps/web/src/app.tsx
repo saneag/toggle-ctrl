@@ -81,20 +81,7 @@ export function App() {
 
   return (
     <Routes>
-      <Route
-        path="/"
-        element={
-          user ? (
-            user.organizations.length > 0 ? (
-              <WorkspaceHome user={user} />
-            ) : (
-              <Dashboard user={user} />
-            )
-          ) : (
-            <AuthScreen />
-          )
-        }
-      />
+      <Route path="/" element={user ? <WorkspaceHome user={user} /> : <AuthScreen />} />
       <Route
         path="/workspaces/:organizationId"
         element={user ? <WorkspaceRoute user={user} /> : <AuthScreen />}
@@ -123,7 +110,7 @@ export function App() {
 
 function WorkspaceRoute({ user }: WorkspaceRouteProps) {
   const { organizationId } = useParams();
-  if (!organizationId || !user.organizations.some((item) => item.id === organizationId)) {
+  if (!organizationId) {
     return <Navigate to="/" replace />;
   }
   return <Dashboard user={user} organizationId={organizationId} />;

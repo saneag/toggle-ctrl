@@ -1,4 +1,11 @@
-import type { CurrentUser, Member, Organization, WorkspaceIcon } from "../types.js";
+import type {
+  CurrentUser,
+  Member,
+  MemberRole,
+  MemberStatus,
+  Organization,
+  WorkspaceIcon,
+} from "../types.js";
 
 export type SidebarProps = {
   user: CurrentUser;
@@ -12,7 +19,16 @@ export type DashboardProps = { user: CurrentUser; organizationId?: string };
 export type WorkspaceHomeProps = { user: CurrentUser };
 export type WorkspaceMarkProps = { icon?: WorkspaceIcon | string | null; className?: string };
 export type WorkspaceColorStyle = { icon: string; swatch: string };
-export type MembersPanelProps = { members: Member[]; isLoading: boolean };
+export type MembersPanelProps = {
+  members: Member[];
+  isLoading: boolean;
+  searchQuery: string;
+  onSearchQueryChange: (query: string) => void;
+  selectedRoles: MemberRole[];
+  onSelectedRolesChange: (roles: MemberRole[]) => void;
+  selectedStatuses: MemberStatus[];
+  onSelectedStatusesChange: (statuses: MemberStatus[]) => void;
+};
 export type WorkspaceRouteProps = { user: CurrentUser };
 export type WorkspaceCardProps = {
   workspace: Organization;
@@ -20,11 +36,12 @@ export type WorkspaceCardProps = {
   showFavoriteAction?: boolean;
   isFavorite?: boolean;
   isFavoritePending?: boolean;
-  onToggleFavorite?: (organizationId: string) => void;
+  onToggleFavorite?: (organizationId: string, isCurrentlyFavorite?: boolean) => void;
 };
 export type WorkspaceGroupId = "favorites" | "admin" | "assigned";
 export type WorkspaceSearchScope = WorkspaceGroupId;
 export type WorkspaceSectionCollapseState = Partial<Record<WorkspaceGroupId, boolean>>;
+export type WorkspaceSectionPages = Record<WorkspaceGroupId, number>;
 export type WorkspaceGroupProps = {
   id: WorkspaceGroupId;
   title: string;
@@ -32,7 +49,12 @@ export type WorkspaceGroupProps = {
   workspaces: Organization[];
   emptyMessage: string;
   isCollapsed: boolean;
+  workspaceCount: number;
+  currentPage: number;
+  totalPages: number;
+  onPageChange: (page: number) => void;
+  isLoading?: boolean;
   onToggle: (id: WorkspaceGroupId, isCollapsed: boolean) => void;
   isFavoritePending?: boolean;
-  onToggleFavorite?: (organizationId: string) => void;
+  onToggleFavorite?: (organizationId: string, isCurrentlyFavorite?: boolean) => void;
 };

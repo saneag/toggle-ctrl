@@ -1,11 +1,3 @@
-export type SessionMembership = {
-  organizationId: string;
-  organizationName: string;
-  organizationIcon: string;
-  organizationColor: string;
-  role: string;
-};
-
 export type SessionUser = {
   id: string;
   email: string;
@@ -13,5 +5,4 @@ export type SessionUser = {
   plan: "FREE" | "PRO";
   sessionId: string;
   csrfHash: string;
-  memberships: SessionMembership[];
 };

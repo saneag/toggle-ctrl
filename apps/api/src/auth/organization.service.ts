@@ -2,7 +2,9 @@ import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../prisma/prisma.service.js";
 import { readRequiredText } from "./security.util.js";
+import type { OrganizationSearchPage } from "./types/organization-search-page.js";
 import type { OrganizationSearchScope } from "./types/organization-search.js";
+import type { OrganizationSummary } from "./types/organization-summary.js";
 import type { OrganizationUpdateData } from "./types/organization-update.js";
 import type { CreateOrganizationInput, UpdateOrganizationInput } from "./types/request-payloads.js";
 
@@ -51,6 +53,57 @@ export class OrganizationService {
     return favorites.map(({ organizationId }) => organizationId);
   }
 
+  async getSummary(userId: string): Promise<OrganizationSummary> {
+    const [roleCounts, favoriteRecords] = await Promise.all([
+      this.prisma.membership.groupBy({
+        by: ["role"],
+        where: { userId },
+        _count: { _all: true },
+      }),
+      this.prisma.workspaceFavorite.findMany({
+        where: { userId },
+        select: { organizationId: true },
+      }),
+    ]);
+    const countForRole = (role: "ADMIN" | "MANAGER" | "VIEWER") =>
+      roleCounts.find((item) => item.role === role)?._count._all ?? 0;
+    const admin = countForRole("ADMIN");
+    const assigned = countForRole("MANAGER") + countForRole("VIEWER");
+    const favoriteIds = favoriteRecords.map((favorite) => favorite.organizationId);
+    const [adminUnfavorited, assignedUnfavorited] = await Promise.all([
+      this.prisma.membership.count({
+        where: { userId, role: "ADMIN", organizationId: { notIn: favoriteIds } },
+      }),
+      this.prisma.membership.count({
+        where: {
+          userId,
+          role: { in: ["MANAGER", "VIEWER"] },
+          organizationId: { notIn: favoriteIds },
+        },
+      }),
+    ]);
+    return {
+      total: admin + assigned,
+      admin,
+      assigned,
+      adminUnfavorited,
+      assignedUnfavorited,
+      favorites: favoriteIds.length,
+    };
+  }
+
+  async getById(userId: string, organizationId: string) {
+    const membership = await this.prisma.membership.findUnique({
+      where: { organizationId_userId: { organizationId, userId } },
+      select: {
+        role: true,
+        organization: { select: { id: true, name: true, icon: true, color: true } },
+      },
+    });
+    if (!membership) throw new HttpException("Workspace not found", HttpStatus.NOT_FOUND);
+    return { ...membership.organization, role: membership.role };
+  }
+
   async setFavorite(userId: string, organizationId: string, isFavorite: boolean) {
     if (isFavorite) {
       const membership = await this.prisma.membership.findUnique({
@@ -70,12 +123,25 @@ export class OrganizationService {
     return this.getFavoriteIds(userId);
   }
 
-  async search(userId: string, search: string, scopes: string[], favoriteIds: string[]) {
+  async search(
+    userId: string,
+    search: string,
+    scopes: string[],
+    excludeFavorites = false,
+    page = 1,
+    pageSize = 50,
+  ): Promise<OrganizationSearchPage> {
     if (typeof search !== "string") {
       throw new HttpException("Search must be text", HttpStatus.BAD_REQUEST);
     }
     if (search.length > 120) {
       throw new HttpException("Search must be 120 characters or fewer", HttpStatus.BAD_REQUEST);
+    }
+    if (!Number.isInteger(page) || page < 1) {
+      throw new HttpException("Page must be a positive integer", HttpStatus.BAD_REQUEST);
+    }
+    if (!Number.isInteger(pageSize) || pageSize < 1 || pageSize > 50) {
+      throw new HttpException("Page size must be between 1 and 50", HttpStatus.BAD_REQUEST);
     }
     const allowedScopes: OrganizationSearchScope[] = ["favorites", "admin", "assigned"];
     if (
@@ -84,10 +150,18 @@ export class OrganizationService {
     ) {
       throw new HttpException("Choose a valid workspace search filter", HttpStatus.BAD_REQUEST);
     }
-    if (!Array.isArray(favoriteIds) || favoriteIds.some((id) => typeof id !== "string")) {
-      throw new HttpException("Favorite workspace IDs must be text", HttpStatus.BAD_REQUEST);
+    const favoriteIds =
+      scopes.includes("favorites") || excludeFavorites
+        ? (
+            await this.prisma.workspaceFavorite.findMany({
+              where: { userId },
+              select: { organizationId: true },
+            })
+          ).map(({ organizationId }) => organizationId)
+        : [];
+    if (scopes.includes("favorites") && favoriteIds.length === 0 && scopes.length === 1) {
+      return { items: [], total: 0, page, pageSize };
     }
-    if (scopes.includes("favorites") && favoriteIds.length === 0 && scopes.length === 1) return [];
 
     const assignedRoles: ("MANAGER" | "VIEWER")[] = ["MANAGER", "VIEWER"];
     const membershipFilters = [
@@ -100,26 +174,39 @@ export class OrganizationService {
     const memberships = await this.prisma.membership.findMany({
       where: {
         userId,
+        ...(excludeFavorites && favoriteIds.length > 0
+          ? { organizationId: { notIn: favoriteIds } }
+          : {}),
         ...(scopes.length > 0 ? { OR: membershipFilters } : {}),
       },
       select: { organizationId: true, role: true },
     });
-    const organizations = await this.prisma.organization.findMany({
-      where: {
-        id: { in: memberships.map(({ organizationId }) => organizationId) },
-        name: { contains: search.trim(), mode: "insensitive" },
-      },
-      select: { id: true, name: true, icon: true, color: true },
-    });
+    const organizationWhere = {
+      id: { in: memberships.map(({ organizationId }) => organizationId) },
+      name: { contains: search.trim(), mode: "insensitive" as const },
+    };
+    const [total, organizations] = await Promise.all([
+      this.prisma.organization.count({ where: organizationWhere }),
+      this.prisma.organization.findMany({
+        where: organizationWhere,
+        select: { id: true, name: true, icon: true, color: true },
+        orderBy: [{ name: "asc" }, { id: "asc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+    ]);
     const rolesByOrganizationId = new Map(
       memberships.map(({ organizationId, role }) => [organizationId, role]),
     );
-    return organizations
-      .map((organization) => ({
+    return {
+      items: organizations.map((organization) => ({
         ...organization,
         role: rolesByOrganizationId.get(organization.id)!,
-      }))
-      .sort((first, second) => first.name.localeCompare(second.name));
+      })),
+      total,
+      page,
+      pageSize,
+    };
   }
 
   create(userId: string, input: CreateOrganizationInput) {

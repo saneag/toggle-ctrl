@@ -49,7 +49,7 @@ export function WorkspaceCard({
           aria-pressed={isFavorite}
           className={`group/favorite absolute z-10 rounded-full ${isList ? "right-12" : "right-14"} top-1/2 -translate-y-1/2 ${isFavorite ? "text-primary hover:text-muted-foreground" : "text-muted-foreground hover:text-primary"}`}
           disabled={isFavoritePending}
-          onClick={() => onToggleFavorite?.(workspace.id)}
+          onClick={() => onToggleFavorite?.(workspace.id, isFavorite)}
           size={isList ? "icon-sm" : "icon"}
           title={isFavorite ? "Remove from favorites" : "Add to favorites"}
           type="button"

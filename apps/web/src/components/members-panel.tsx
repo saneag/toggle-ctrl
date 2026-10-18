@@ -1,16 +1,14 @@
-import { useState } from "react";
-
 import { Filter, LoaderCircle, Search } from "lucide-react";
 
-import type { MemberRoleFilter } from "../types.js";
+import type { MemberRole, MemberStatus } from "../types.js";
 import { Button } from "./ui/button.js";
 import { Card } from "./ui/card.js";
 import {
   DropdownMenu,
+  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuLabel,
-  DropdownMenuRadioGroup,
-  DropdownMenuRadioItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu.js";
 import { Input } from "./ui/input.js";
@@ -24,33 +22,31 @@ const initials = (name: string) =>
     .join("")
     .toUpperCase();
 
-export function MembersPanel({ members, isLoading }: MembersPanelProps) {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState<MemberRoleFilter>("ALL");
+export function MembersPanel({
+  members,
+  isLoading,
+  searchQuery,
+  onSearchQueryChange,
+  selectedRoles,
+  onSelectedRolesChange,
+  selectedStatuses,
+  onSelectedStatusesChange,
+}: MembersPanelProps) {
+  const activeFilterCount = selectedRoles.length + selectedStatuses.length;
 
-  if (isLoading)
-    return (
-      <Card className="border-border text-muted-foreground flex min-h-48 flex-col items-center justify-center gap-3 p-8 text-center">
-        <LoaderCircle aria-hidden="true" className="text-primary size-6 animate-spin" />
-        <strong className="text-foreground text-base font-medium">Loading your people…</strong>
-      </Card>
+  function toggleRole(role: MemberRole, checked: boolean) {
+    onSelectedRolesChange(
+      checked ? [...selectedRoles, role] : selectedRoles.filter((value) => value !== role),
     );
-  if (members.length === 0)
-    return (
-      <Card className="border-border text-muted-foreground flex min-h-48 flex-col items-center justify-center gap-3 p-8 text-center">
-        <LoaderCircle aria-hidden="true" className="text-primary size-6 animate-spin" />
-        <strong className="text-foreground text-base font-medium">Your team is taking shape</strong>
-        <p className="text-sm">Invite a teammate to start collaborating here.</p>
-      </Card>
+  }
+
+  function toggleStatus(status: MemberStatus, checked: boolean) {
+    onSelectedStatusesChange(
+      checked
+        ? [...selectedStatuses, status]
+        : selectedStatuses.filter((value) => value !== status),
     );
-  const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
-  const filteredMembers = members.filter(
-    (member) =>
-      (roleFilter === "ALL" || member.role === roleFilter) &&
-      [member.user.name, member.user.email].some((value) =>
-        value.toLocaleLowerCase().includes(normalizedQuery),
-      ),
-  );
+  }
 
   return (
     <Card className="border-border overflow-hidden p-0">
@@ -66,7 +62,7 @@ export function MembersPanel({ members, isLoading }: MembersPanelProps) {
           <Input
             className="h-9 bg-white/80 pl-9"
             id="member-search"
-            onChange={(event) => setSearchQuery(event.target.value)}
+            onChange={(event) => onSearchQueryChange(event.target.value)}
             placeholder="Search members"
             value={searchQuery}
           />
@@ -79,24 +75,35 @@ export function MembersPanel({ members, isLoading }: MembersPanelProps) {
             >
               <Filter aria-hidden="true" className="size-4" />
               Filters
-              {roleFilter !== "ALL" && (
+              {activeFilterCount > 0 && (
                 <span className="bg-secondary text-secondary-foreground grid size-5 place-items-center rounded-full text-[0.7rem]">
-                  1
+                  {activeFilterCount}
                 </span>
               )}
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuLabel>Filter by role</DropdownMenuLabel>
-            <DropdownMenuRadioGroup
-              onValueChange={(value) => setRoleFilter(value as MemberRoleFilter)}
-              value={roleFilter}
-            >
-              <DropdownMenuRadioItem value="ALL">All roles</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="ADMIN">Admin</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="MANAGER">Manager</DropdownMenuRadioItem>
-              <DropdownMenuRadioItem value="VIEWER">Viewer</DropdownMenuRadioItem>
-            </DropdownMenuRadioGroup>
+            <DropdownMenuLabel>Role</DropdownMenuLabel>
+            {(["ADMIN", "MANAGER", "VIEWER"] as const).map((role) => (
+              <DropdownMenuCheckboxItem
+                checked={selectedRoles.includes(role)}
+                key={role}
+                onCheckedChange={(checked) => toggleRole(role, checked)}
+              >
+                {role.charAt(0) + role.slice(1).toLowerCase()}
+              </DropdownMenuCheckboxItem>
+            ))}
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel>Status</DropdownMenuLabel>
+            {(["ACTIVE", "INVITED"] as const).map((status) => (
+              <DropdownMenuCheckboxItem
+                checked={selectedStatuses.includes(status)}
+                key={status}
+                onCheckedChange={(checked) => toggleStatus(status, checked)}
+              >
+                {status === "ACTIVE" ? "Active" : "Invited"}
+              </DropdownMenuCheckboxItem>
+            ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
@@ -105,38 +112,51 @@ export function MembersPanel({ members, isLoading }: MembersPanelProps) {
         <span>ROLE</span>
         <span>STATUS</span>
       </div>
-      {filteredMembers.map((member) => (
+      {isLoading ? (
         <div
-          className="border-border grid grid-cols-[minmax(0,1fr)_7rem_6rem] items-center gap-4 border-b px-5 py-4 last:border-0"
-          key={member.id}
+          className="text-muted-foreground flex items-center justify-center gap-2 px-5 py-8 text-sm"
+          role="status"
         >
-          <div className="flex min-w-0 items-center gap-3">
-            <span className="bg-secondary text-foreground flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
-              {initials(member.user.name)}
+          <LoaderCircle aria-hidden="true" className="text-primary size-4 animate-spin" />
+          Loading members…
+        </div>
+      ) : (
+        members.map((member) => (
+          <div
+            className="border-border grid grid-cols-[minmax(0,1fr)_7rem_6rem] items-center gap-4 border-b px-5 py-4 last:border-0"
+            key={member.id}
+          >
+            <div className="flex min-w-0 items-center gap-3">
+              <span className="bg-secondary text-foreground flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
+                {initials(member.user.name)}
+              </span>
+              <span>
+                <span className="text-foreground block truncate text-sm font-medium">
+                  {member.user.name}
+                </span>
+                <span className="text-muted-foreground block truncate text-xs">
+                  {member.user.email}
+                </span>
+              </span>
+            </div>
+            <span className="text-foreground flex items-center gap-2 text-sm">
+              <i className="bg-primary size-2 rounded-full" />
+              {member.role.charAt(0) + member.role.slice(1).toLowerCase()}
             </span>
-            <span>
-              <span className="text-foreground block truncate text-sm font-medium">
-                {member.user.name}
-              </span>
-              <span className="text-muted-foreground block truncate text-xs">
-                {member.user.email}
-              </span>
+            <span className="text-muted-foreground flex items-center gap-2 text-sm">
+              <i
+                className={`${member.status === "ACTIVE" ? "bg-primary" : "bg-amber-500"} size-2 rounded-full`}
+              />
+              {member.status === "ACTIVE" ? "Active" : "Invited"}
             </span>
           </div>
-          <span className="text-foreground flex items-center gap-2 text-sm">
-            <i className="bg-primary size-2 rounded-full" />
-            {member.role.charAt(0) + member.role.slice(1).toLowerCase()}
-          </span>
-          <span className="text-muted-foreground flex items-center gap-2 text-sm">
-            <i className="bg-primary size-2 rounded-full" /> Active
-          </span>
-        </div>
-      ))}
-      {filteredMembers.length === 0 && (
+        ))
+      )}
+      {!isLoading && members.length === 0 && (
         <p className="text-muted-foreground px-5 py-8 text-center text-sm" role="status">
-          {roleFilter === "ALL"
-            ? `No members match “${searchQuery.trim()}”.`
-            : `No ${roleFilter.toLowerCase()} members match your search.`}
+          {searchQuery.trim() || activeFilterCount > 0
+            ? "No members or invitations match your search and filters."
+            : "Your team is taking shape. Invite a teammate to start collaborating here."}
         </p>
       )}
     </Card>

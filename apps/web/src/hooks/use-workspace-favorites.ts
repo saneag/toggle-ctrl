@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { getWorkspaceFavorites } from "../utils/get-workspace-favorites.js";
+import { searchWorkspaces } from "../utils/search-workspaces.js";
 import { setWorkspaceFavorite } from "../utils/set-workspace-favorite.js";
 import {
   clearLegacyWorkspaceFavoriteIds,
@@ -19,14 +19,15 @@ export function useWorkspaceFavorites(userId: string) {
   const favoritesQuery = useQuery({
     queryKey,
     queryFn: async () => {
-      const serverFavoriteIds = await getWorkspaceFavorites();
-      if (serverFavoriteIds.length > 0) {
+      const serverFavoritesPage = await searchWorkspaces("", { scopes: ["favorites"] });
+      const serverFavorites = serverFavoritesPage.items;
+      if (serverFavorites.length > 0) {
         clearLegacyWorkspaceFavoriteIds(userId);
-        return serverFavoriteIds;
+        return serverFavorites;
       }
 
       const legacyFavoriteIds = readLegacyWorkspaceFavoriteIds(userId);
-      if (legacyFavoriteIds.length === 0) return serverFavoriteIds;
+      if (legacyFavoriteIds.length === 0) return serverFavorites;
 
       const migrationResults = await Promise.allSettled(
         legacyFavoriteIds.map((organizationId) =>
@@ -36,26 +37,37 @@ export function useWorkspaceFavorites(userId: string) {
       if (migrationResults.every((result) => result.status === "fulfilled")) {
         clearLegacyWorkspaceFavoriteIds(userId);
       }
-      return getWorkspaceFavorites();
+      return (await searchWorkspaces("", { scopes: ["favorites"] })).items;
     },
     staleTime: 30_000,
   });
   const favoriteMutation = useMutation({
     mutationFn: (variables: SetWorkspaceFavoriteVariables) => setWorkspaceFavorite(variables),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey }),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey }),
+        queryClient.invalidateQueries({ queryKey: ["workspace-search"] }),
+        queryClient.invalidateQueries({ queryKey: ["organization-summary"] }),
+      ]);
+    },
     onError: (error) => toast.error(error.message),
   });
-  const favoriteIds = favoritesQuery.data ?? [];
+  const favoriteWorkspaces = favoritesQuery.data ?? [];
+  const favoriteIds = favoriteWorkspaces.map((workspace) => workspace.id);
 
-  function toggleFavorite(organizationId: string) {
+  function toggleFavorite(
+    organizationId: string,
+    isCurrentlyFavorite = favoriteIds.includes(organizationId),
+  ) {
     favoriteMutation.mutate({
       organizationId,
-      isFavorite: !favoriteIds.includes(organizationId),
+      isFavorite: !isCurrentlyFavorite,
     });
   }
 
   return {
     favoriteIds,
+    favoriteWorkspaces,
     isFavoriteLoading: favoritesQuery.isPending,
     isFavoritePending: favoriteMutation.isPending,
     toggleFavorite,
