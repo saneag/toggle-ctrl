@@ -3,7 +3,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ListFilter, Search, X } from "lucide-react";
+import { Filter, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { useWorkspaceFavorites } from "../hooks/use-workspace-favorites.js";
@@ -193,7 +193,7 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
                   title="Filter workspaces"
                   variant="ghost"
                 >
-                  <ListFilter aria-hidden="true" className="size-4" />
+                  <Filter aria-hidden="true" className="size-4" />
                   <span>Filters</span>
                   {workspaceSearchScopes.length > 1 && (
                     <span className="bg-primary text-primary-foreground flex size-5 items-center justify-center rounded-full text-xs font-semibold">

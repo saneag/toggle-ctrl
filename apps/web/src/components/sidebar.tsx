@@ -201,12 +201,12 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
                   type="button"
                 >
                   <span
-                    className={`relative grid size-7 shrink-0 place-items-center rounded-lg ${workspaceColorStyles[organization.color].icon} group-focus-within:invisible group-hover:invisible`}
+                    className={`relative grid size-7 shrink-0 place-items-center rounded-lg ${workspaceColorStyles[organization.color].icon} group-hover:invisible`}
                   >
                     <>
                       <WorkspaceMark
                         icon={organization.icon}
-                        className="size-4 transition-opacity group-focus-within:opacity-0 group-hover:opacity-0"
+                        className="size-4 transition-opacity group-hover:opacity-0"
                       />
                       <span className="pointer-events-none absolute -right-1 -bottom-1 grid size-3.5 place-items-center rounded-full bg-amber-100 text-amber-600 ring-1 ring-white">
                         <Star aria-hidden="true" className="size-2.5 fill-current" />
@@ -222,7 +222,7 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
                 </Button>
                 <Button
                   aria-label={`Remove ${organization.name} from favorites`}
-                  className="absolute left-2.5 grid size-7 place-items-center rounded-lg bg-amber-100 text-amber-600 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-amber-200 hover:text-amber-600 focus-visible:opacity-100"
+                  className="absolute left-2.5 grid size-7 place-items-center rounded-lg bg-amber-100 text-amber-600 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-amber-200 hover:text-amber-600 focus-visible:opacity-100"
                   disabled={isFavoritePending}
                   onClick={() => toggleFavorite(organization.id)}
                   title="Remove favorite"

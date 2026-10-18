@@ -39,6 +39,7 @@ export type Organization = {
   role: string;
 };
 export type MemberUser = { id: string; name: string; email: string };
+export type MemberRoleFilter = "ALL" | "ADMIN" | "MANAGER" | "VIEWER";
 export type Member = {
   id: string;
   role: string;
