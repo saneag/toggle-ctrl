@@ -25,6 +25,7 @@ export class InvitationService {
     await this.requireAdmin(actor.id, organizationId);
     const email = readEmail(input.email);
     const role = readMemberRole(input.role);
+    this.email.assertConfigured();
     const organization = await this.prisma.organization.findUniqueOrThrow({
       where: { id: organizationId },
     });
@@ -52,11 +53,16 @@ export class InvitationService {
     });
 
     const url = `${this.email.webUrl()}/signup?invite=${encodeURIComponent(token)}&email=${encodeURIComponent(email)}`;
-    await this.email.send(
-      email,
-      `Invitation to ${organization.name}`,
-      `You have been invited to ${organization.name}. Accept your invitation: ${url}`,
-    );
+    try {
+      await this.email.send(
+        email,
+        `Invitation to ${organization.name}`,
+        `You have been invited to ${organization.name}. Accept your invitation: ${url}`,
+      );
+    } catch (error) {
+      await this.prisma.invitation.delete({ where: { id: invitation.id } });
+      throw error;
+    }
     return { id: invitation.id, email, role, expiresAt: invitation.expiresAt };
   }
 

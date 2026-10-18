@@ -1,15 +1,27 @@
-import { Injectable, InternalServerErrorException } from "@nestjs/common";
+import { Injectable, ServiceUnavailableException } from "@nestjs/common";
 
 import nodemailer from "nodemailer";
 
 @Injectable()
 export class EmailService {
-  async send(to: string, subject: string, text: string): Promise<void> {
+  assertConfigured(): void {
+    this.getConfiguration();
+  }
+
+  private getConfiguration() {
+    // TODO(email-delivery): Configure an SMTP provider and sender before enabling invitation emails.
     const host = process.env.SMTP_HOST;
     const from = process.env.SMTP_FROM;
     if (!host || !from) {
-      throw new InternalServerErrorException("SMTP_HOST and SMTP_FROM must be configured");
+      throw new ServiceUnavailableException(
+        "Email delivery is not configured. Set SMTP_HOST and SMTP_FROM before sending invitations.",
+      );
     }
+    return { host, from };
+  }
+
+  async send(to: string, subject: string, text: string): Promise<void> {
+    const { host, from } = this.getConfiguration();
 
     const transporter = nodemailer.createTransport({
       host,
@@ -23,7 +35,7 @@ export class EmailService {
     try {
       await transporter.sendMail({ from, to, subject, text });
     } catch {
-      throw new InternalServerErrorException("Email delivery failed");
+      throw new ServiceUnavailableException("Email delivery failed. Check the SMTP settings.");
     }
   }
 
