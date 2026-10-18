@@ -3,23 +3,11 @@ import { type FormEvent, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  ArrowUpRight,
-  Building2,
-  Code2,
-  Flag,
-  FlaskConical,
-  Layers3,
-  Pencil,
-  RefreshCw,
-  Rocket,
-  Target,
-  Zap,
-} from "lucide-react";
+import { ArrowUpRight, Pencil, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 
 import type { CurrentUser } from "../types.js";
-import type { WorkspaceIcon } from "../types.js";
+import type { WorkspaceColor, WorkspaceIcon } from "../types.js";
 import { acceptInvitation } from "../utils/accept-invitation.js";
 import { createOrganization } from "../utils/create-organization.js";
 import { getInvitations } from "../utils/get-invitations.js";
@@ -41,6 +29,7 @@ import {
   DialogTitle,
 } from "./ui/dialog.js";
 import { Input } from "./ui/input.js";
+import { workspaceColorStyles, workspaceIcons } from "./workspace-appearance.js";
 import type { DashboardProps } from "./workspace.types.js";
 
 export function Dashboard({ user, organizationId = "" }: DashboardProps) {
@@ -52,6 +41,7 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsName, setSettingsName] = useState("");
   const [settingsIcon, setSettingsIcon] = useState<WorkspaceIcon>("flag");
+  const [settingsColor, setSettingsColor] = useState<WorkspaceColor>("teal");
   const [settingsErrorOrganizationId, setSettingsErrorOrganizationId] = useState<string | null>(
     null,
   );
@@ -94,7 +84,11 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
   });
   const settingsMutation = useMutation({
     mutationFn: () =>
-      updateOrganization(activeId, { name: settingsName.trim(), icon: settingsIcon }),
+      updateOrganization(activeId, {
+        name: settingsName.trim(),
+        icon: settingsIcon,
+        color: settingsColor,
+      }),
     onSuccess: (updated) => {
       queryClient.setQueryData<CurrentUser>(
         ["current-user"],
@@ -134,7 +128,9 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
   const isWorkspaceSettingsDirty = Boolean(
     isSettingsOpen &&
     organization &&
-    (settingsName.trim() !== organization.name || settingsIcon !== (organization.icon || "flag")),
+    (settingsName.trim() !== organization.name ||
+      settingsIcon !== (organization.icon || "flag") ||
+      settingsColor !== (organization.color || "teal")),
   );
   const saveStatus = settingsMutation.isPending
     ? "Saving…"
@@ -201,31 +197,18 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
               <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider">
                 YOUR TEAM
               </p>
-              <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                Good morning, {user.name.split(" ")[0]}
-              </h1>
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                  Good morning, {user.name.split(" ")[0]}
+                </h1>
+                {isAdmin && <Badge variant="secondary">ADMIN</Badge>}
+              </div>
               <p className="text-muted-foreground mt-2 text-sm">
                 {organization
                   ? `Manage access to ${organization.name}.`
                   : "Create or join a workspace to manage feature flags with your team."}
               </p>
             </div>
-            {organization && (
-              <Button
-                variant="outline"
-                className="border-border bg-card text-foreground hover:bg-accent shrink-0"
-                onClick={() => {
-                  refreshIconRef.current?.animate(
-                    [{ transform: "rotate(0deg)" }, { transform: "rotate(360deg)" }],
-                    { duration: 500, easing: "linear" },
-                  );
-                  void membersQuery.refetch();
-                }}
-              >
-                <RefreshCw ref={refreshIconRef} aria-hidden="true" className="mr-2 size-4" />
-                Refresh
-              </Button>
-            )}
           </div>
           {notice && (
             <p
@@ -275,8 +258,8 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                     People who can access this workspace.
                   </p>
                 </div>
-                {isAdmin && (
-                  <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  {isAdmin && (
                     <Button
                       className="border-border bg-card text-foreground hover:bg-accent"
                       variant="outline"
@@ -286,15 +269,30 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                         setSettingsErrorOrganizationId(null);
                         setSettingsName(organization.name);
                         setSettingsIcon((organization.icon || "flag") as WorkspaceIcon);
+                        setSettingsColor((organization.color || "teal") as WorkspaceColor);
                         setIsSettingsOpen(true);
                       }}
                     >
                       <Pencil aria-hidden="true" className="mr-2 size-3.5" />
                       Edit workspace
                     </Button>
-                    <Badge variant="secondary">ADMIN</Badge>
-                  </div>
-                )}
+                  )}
+                  <Button
+                    className="border-border bg-card text-foreground hover:bg-accent"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      refreshIconRef.current?.animate(
+                        [{ transform: "rotate(0deg)" }, { transform: "rotate(360deg)" }],
+                        { duration: 500, easing: "linear" },
+                      );
+                      void membersQuery.refetch();
+                    }}
+                  >
+                    <RefreshCw ref={refreshIconRef} aria-hidden="true" className="size-4" />
+                    Refresh
+                  </Button>
+                </div>
               </div>
               <MembersPanel members={membersQuery.data ?? []} isLoading={membersQuery.isPending} />
               {isAdmin && (
@@ -401,18 +399,12 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
               </label>
               <fieldset className="space-y-2">
                 <legend className="text-sm font-medium">Workspace icon</legend>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-7 gap-2">
                   {(
-                    [
-                      ["flag", Flag],
-                      ["zap", Zap],
-                      ["rocket", Rocket],
-                      ["flask", FlaskConical],
-                      ["target", Target],
-                      ["layers", Layers3],
-                      ["code", Code2],
-                      ["building", Building2],
-                    ] as const
+                    Object.entries(workspaceIcons) as [
+                      WorkspaceIcon,
+                      (typeof workspaceIcons)[WorkspaceIcon],
+                    ][]
                   ).map(([key, Icon]) => (
                     <Button
                       aria-label={`${key} icon`}
@@ -427,6 +419,28 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                       variant="outline"
                     >
                       <Icon aria-hidden="true" className="size-4" />
+                    </Button>
+                  ))}
+                </div>
+              </fieldset>
+              <fieldset className="space-y-2">
+                <legend className="text-sm font-medium">Workspace color</legend>
+                <div className="flex flex-wrap gap-2">
+                  {Object.entries(workspaceColorStyles).map(([color, styles]) => (
+                    <Button
+                      aria-label={`${color} workspace color`}
+                      aria-pressed={settingsColor === color}
+                      className={`border-border bg-card hover:bg-accent ${
+                        settingsColor === color ? "ring-primary ring-2" : ""
+                      }`}
+                      key={color}
+                      onClick={() => setSettingsColor(color as WorkspaceColor)}
+                      size="icon"
+                      title={`${color.charAt(0).toUpperCase()}${color.slice(1)}`}
+                      type="button"
+                      variant="outline"
+                    >
+                      <span className={`${styles.swatch} size-4 rounded-full`} />
                     </Button>
                   ))}
                 </div>

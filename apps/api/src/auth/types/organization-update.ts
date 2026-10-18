@@ -1,1 +1,1 @@
-export type OrganizationUpdateData = { name?: string; icon?: string };
+export type OrganizationUpdateData = { name?: string; icon?: string; color?: string };

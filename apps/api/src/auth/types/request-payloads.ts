@@ -10,4 +10,4 @@ export type LoginInput = { email?: unknown; password?: unknown };
 export type CreateInvitationInput = { email?: unknown; role?: unknown };
 export type AddMemberInput = { email?: unknown; name?: unknown; role?: unknown };
 export type CreateOrganizationInput = { name?: unknown };
-export type UpdateOrganizationInput = { name?: unknown; icon?: unknown };
+export type UpdateOrganizationInput = { name?: unknown; icon?: unknown; color?: unknown };

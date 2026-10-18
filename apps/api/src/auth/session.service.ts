@@ -58,6 +58,7 @@ export class SessionService {
         organizationId: item.organizationId,
         organizationName: item.organization.name,
         organizationIcon: item.organization.icon,
+        organizationColor: item.organization.color,
         role: item.role,
       })),
     };
@@ -105,6 +106,7 @@ export class SessionService {
         id: item.organizationId,
         name: item.organization.name,
         icon: item.organization.icon,
+        color: item.organization.color,
         role: item.role,
       })),
     };

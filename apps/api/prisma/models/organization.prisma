@@ -2,6 +2,7 @@ model Organization {
   id          String       @id @default(uuid())
   name        String
   icon        String       @default("flag")
+  color       String       @default("teal")
   createdAt   DateTime     @default(now())
   memberships Membership[]
   invitations Invitation[]

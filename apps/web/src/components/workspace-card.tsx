@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { ArrowUpRight, Star } from "lucide-react";
 
 import { Button } from "./ui/button.js";
+import { workspaceColorStyles } from "./workspace-appearance.js";
 import { WorkspaceMark } from "./workspace-mark.js";
 import type { WorkspaceCardProps } from "./workspace.types.js";
 
@@ -29,7 +30,7 @@ export function WorkspaceCard({
         to={`/workspaces/${workspace.id}`}
       >
         <span
-          className={`bg-primary/10 text-primary grid shrink-0 place-items-center rounded-lg ${isList ? "size-9" : "size-12"}`}
+          className={`${workspaceColorStyles[workspace.color].icon} grid shrink-0 place-items-center rounded-lg ${isList ? "size-9" : "size-12"}`}
         >
           <WorkspaceMark icon={workspace.icon} className={isList ? "size-5" : "size-6"} />
         </span>

@@ -15,7 +15,28 @@ const organizationIcons = [
   "layers",
   "code",
   "building",
+  "bell",
+  "book",
+  "briefcase",
+  "cloud",
+  "compass",
+  "database",
+  "flame",
+  "globe",
+  "heart",
+  "key",
+  "lightbulb",
+  "lock",
+  "message",
+  "package",
+  "puzzle",
+  "shield",
+  "users",
+  "wrench",
+  "workflow",
+  "coffee",
 ];
+const organizationColors = ["teal", "blue", "indigo", "violet", "rose", "orange", "amber", "slate"];
 
 @Injectable()
 export class OrganizationService {
@@ -88,7 +109,7 @@ export class OrganizationService {
         id: { in: memberships.map(({ organizationId }) => organizationId) },
         name: { contains: search.trim(), mode: "insensitive" },
       },
-      select: { id: true, name: true, icon: true },
+      select: { id: true, name: true, icon: true, color: true },
     });
     const rolesByOrganizationId = new Map(
       memberships.map(({ organizationId, role }) => [organizationId, role]),
@@ -147,8 +168,14 @@ export class OrganizationService {
       }
       data.icon = input.icon;
     }
+    if (input.color !== undefined) {
+      if (typeof input.color !== "string" || !organizationColors.includes(input.color)) {
+        throw new HttpException("Choose a valid workspace color", HttpStatus.BAD_REQUEST);
+      }
+      data.color = input.color;
+    }
     if (!Object.keys(data).length)
-      throw new HttpException("Workspace name or icon is required", HttpStatus.BAD_REQUEST);
+      throw new HttpException("Workspace name, icon, or color is required", HttpStatus.BAD_REQUEST);
     return this.prisma.organization.update({ where: { id: organizationId }, data });
   }
 }

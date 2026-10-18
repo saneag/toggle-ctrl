@@ -2,6 +2,7 @@ export type SessionMembership = {
   organizationId: string;
   organizationName: string;
   organizationIcon: string;
+  organizationColor: string;
   role: string;
 };
 

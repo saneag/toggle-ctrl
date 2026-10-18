@@ -11,6 +11,7 @@ export type SidebarProps = {
 export type DashboardProps = { user: CurrentUser; organizationId?: string };
 export type WorkspaceHomeProps = { user: CurrentUser };
 export type WorkspaceMarkProps = { icon?: WorkspaceIcon | string | null; className?: string };
+export type WorkspaceColorStyle = { icon: string; swatch: string };
 export type MembersPanelProps = { members: Member[]; isLoading: boolean };
 export type WorkspaceRouteProps = { user: CurrentUser };
 export type WorkspaceCardProps = {

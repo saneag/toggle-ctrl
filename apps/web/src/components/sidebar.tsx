@@ -10,6 +10,7 @@ import { searchWorkspaces } from "../utils/search-workspaces.js";
 import { BrandMark } from "./brand-mark.js";
 import { Button } from "./ui/button.js";
 import { Input } from "./ui/input.js";
+import { workspaceColorStyles } from "./workspace-appearance.js";
 import { WorkspaceMark } from "./workspace-mark.js";
 import type { SidebarProps } from "./workspace.types.js";
 
@@ -191,7 +192,7 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
       <nav className="min-h-0 flex-1 overflow-y-auto" aria-label="Favorite workspaces">
         {visibleFavorites.length > 0 ? (
           <ul className="space-y-1">
-            {visibleFavorites.map((organization, index) => (
+            {visibleFavorites.map((organization) => (
               <li className="group relative flex items-center gap-1" key={organization.id}>
                 <Button
                   className={`flex h-10 min-w-0 flex-1 items-center gap-3 rounded-xl px-2.5 text-left text-sm transition-colors ${activeId === organization.id ? "text-foreground bg-transparent hover:bg-black/[0.04]" : "text-muted-foreground hover:text-foreground hover:bg-black/[0.04]"}`}
@@ -200,7 +201,7 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
                   type="button"
                 >
                   <span
-                    className={`relative grid size-7 shrink-0 place-items-center rounded-lg ${index % 2 === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"} group-focus-within:invisible group-hover:invisible`}
+                    className={`relative grid size-7 shrink-0 place-items-center rounded-lg ${workspaceColorStyles[organization.color].icon} group-focus-within:invisible group-hover:invisible`}
                   >
                     <>
                       <WorkspaceMark
