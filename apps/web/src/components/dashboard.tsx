@@ -1,4 +1,4 @@
-import { type FormEvent, useState } from "react";
+import { type FormEvent, useRef, useState } from "react";
 
 import { Link, useNavigate } from "react-router-dom";
 
@@ -13,7 +13,6 @@ import {
   Pencil,
   RefreshCw,
   Rocket,
-  Sparkles,
   Target,
   Zap,
 } from "lucide-react";
@@ -56,6 +55,7 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
   const [settingsErrorOrganizationId, setSettingsErrorOrganizationId] = useState<string | null>(
     null,
   );
+  const refreshIconRef = useRef<SVGSVGElement>(null);
   const queryClient = useQueryClient();
   const organization = user.organizations.find((item) => item.id === activeId);
   const isAdmin = organization?.role === "ADMIN";
@@ -202,8 +202,7 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                 YOUR TEAM
               </p>
               <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                Good morning, {user.name.split(" ")[0]}{" "}
-                <Sparkles aria-hidden="true" className="text-primary inline size-5" />
+                Good morning, {user.name.split(" ")[0]}
               </h1>
               <p className="text-muted-foreground mt-2 text-sm">
                 {organization
@@ -215,9 +214,15 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
               <Button
                 variant="outline"
                 className="border-border bg-card text-foreground hover:bg-accent shrink-0"
-                onClick={() => membersQuery.refetch()}
+                onClick={() => {
+                  refreshIconRef.current?.animate(
+                    [{ transform: "rotate(0deg)" }, { transform: "rotate(360deg)" }],
+                    { duration: 500, easing: "linear" },
+                  );
+                  void membersQuery.refetch();
+                }}
               >
-                <RefreshCw aria-hidden="true" className="mr-2 size-4" />
+                <RefreshCw ref={refreshIconRef} aria-hidden="true" className="mr-2 size-4" />
                 Refresh
               </Button>
             )}
@@ -273,6 +278,7 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                 {isAdmin && (
                   <div className="flex items-center gap-3">
                     <Button
+                      className="border-border bg-card text-foreground hover:bg-accent"
                       variant="outline"
                       size="sm"
                       onClick={() => {
@@ -292,13 +298,15 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
               </div>
               <MembersPanel members={membersQuery.data ?? []} isLoading={membersQuery.isPending} />
               {isAdmin && (
-                <InviteForm
-                  organizationId={organization.id}
-                  onInvited={(message) => {
-                    setNotice(message);
-                    void membersQuery.refetch();
-                  }}
-                />
+                <div className="mt-3">
+                  <InviteForm
+                    organizationId={organization.id}
+                    onInvited={(message) => {
+                      setNotice(message);
+                      void membersQuery.refetch();
+                    }}
+                  />
+                </div>
               )}
               {!isAdmin && (
                 <div className="border-border bg-card text-muted-foreground mt-5 rounded-md border p-4 text-sm">
@@ -367,10 +375,10 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
       </Dialog>
       <Dialog open={isSettingsOpen && Boolean(organization)} onOpenChange={setIsSettingsOpen}>
         {organization && (
-          <DialogContent>
+          <DialogContent className="border-0">
             <DialogHeader>
-              <DialogTitle>Workspace settings</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="text-xl font-semibold">Workspace settings</DialogTitle>
+              <DialogDescription className="text-muted-foreground text-sm">
                 Update the name and icon shown across your workspace.
               </DialogDescription>
             </DialogHeader>
@@ -382,7 +390,7 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
               }}
             >
               <label className="block space-y-2 text-sm font-medium" htmlFor="edit-workspace-name">
-                Workspace name
+                <span className="block">Workspace name</span>
                 <Input
                   autoFocus
                   id="edit-workspace-name"
@@ -409,7 +417,9 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                     <Button
                       aria-label={`${key} icon`}
                       aria-pressed={settingsIcon === key}
-                      className={settingsIcon === key ? "ring-primary ring-2" : ""}
+                      className={`border-border bg-card text-foreground hover:bg-accent ${
+                        settingsIcon === key ? "ring-primary ring-2" : ""
+                      }`}
                       key={key}
                       onClick={() => setSettingsIcon(key)}
                       size="icon"
@@ -422,7 +432,12 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                 </div>
               </fieldset>
               <DialogFooter>
-                <Button onClick={() => setIsSettingsOpen(false)} type="button" variant="outline">
+                <Button
+                  className="border-border text-foreground bg-[#f4f4f5] hover:bg-[#e9e9eb]"
+                  onClick={() => setIsSettingsOpen(false)}
+                  type="button"
+                  variant="outline"
+                >
                   Cancel
                 </Button>
                 <Button disabled={!settingsName.trim() || settingsMutation.isPending} type="submit">
