@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 
-import { ArrowUpRight, Building2, Star } from "lucide-react";
+import { ArrowUpRight, Star } from "lucide-react";
 
 import { Button } from "./ui/button.js";
+import { WorkspaceMark } from "./workspace-mark.js";
 import type { WorkspaceCardProps } from "./workspace.types.js";
 
 export function WorkspaceCard({
@@ -30,7 +31,7 @@ export function WorkspaceCard({
         <span
           className={`bg-primary/10 text-primary grid shrink-0 place-items-center rounded-lg ${isList ? "size-9" : "size-12"}`}
         >
-          <Building2 aria-hidden="true" className={isList ? "size-5" : "size-6"} />
+          <WorkspaceMark icon={workspace.icon} className={isList ? "size-5" : "size-6"} />
         </span>
         <span className="min-w-0 flex-1">
           <span className="text-card-foreground block truncate text-base font-semibold">
@@ -45,7 +46,7 @@ export function WorkspaceCard({
         <Button
           aria-label={`${isFavorite ? "Remove" : "Add"} ${workspace.name} ${isFavorite ? "from" : "to"} favorites`}
           aria-pressed={isFavorite}
-          className={`absolute z-10 rounded-full ${isList ? "right-12" : "right-14"} top-1/2 -translate-y-1/2 ${isFavorite ? "text-primary" : "text-muted-foreground hover:text-primary"}`}
+          className={`group/favorite absolute z-10 rounded-full ${isList ? "right-12" : "right-14"} top-1/2 -translate-y-1/2 ${isFavorite ? "text-primary hover:text-muted-foreground" : "text-muted-foreground hover:text-primary"}`}
           disabled={isFavoritePending}
           onClick={() => onToggleFavorite?.(workspace.id)}
           size={isList ? "icon-sm" : "icon"}
@@ -53,7 +54,10 @@ export function WorkspaceCard({
           type="button"
           variant="ghost"
         >
-          <Star aria-hidden="true" className={`size-4 ${isFavorite ? "fill-current" : ""}`} />
+          <Star
+            aria-hidden="true"
+            className={`size-4 ${isFavorite ? "fill-current group-hover/favorite:fill-none" : "group-hover/favorite:fill-current"}`}
+          />
         </Button>
       )}
       <Link

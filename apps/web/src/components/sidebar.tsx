@@ -3,41 +3,15 @@ import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useQuery } from "@tanstack/react-query";
-import {
-  Building2,
-  Check,
-  ChevronRight,
-  Code2,
-  Ellipsis,
-  Flag,
-  FlaskConical,
-  Layers3,
-  Plus,
-  Rocket,
-  Search,
-  Star,
-  Target,
-  X,
-  Zap,
-} from "lucide-react";
+import { Check, ChevronRight, Ellipsis, Plus, Search, Star, X } from "lucide-react";
 
 import { useWorkspaceFavorites } from "../hooks/use-workspace-favorites.js";
 import { searchWorkspaces } from "../utils/search-workspaces.js";
 import { BrandMark } from "./brand-mark.js";
 import { Button } from "./ui/button.js";
 import { Input } from "./ui/input.js";
+import { WorkspaceMark } from "./workspace-mark.js";
 import type { SidebarProps } from "./workspace.types.js";
-
-const workspaceIcons = {
-  flag: Flag,
-  zap: Zap,
-  rocket: Rocket,
-  flask: FlaskConical,
-  target: Target,
-  layers: Layers3,
-  code: Code2,
-  building: Building2,
-};
 
 export const workspaceLimitMessage =
   "Your free tier includes only one workspace. Please upgrade to Pro for unlimited workspaces.";
@@ -63,9 +37,9 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
   }, [isAddFavoriteOpen, searchQuery]);
 
   const workspaceSearch = useQuery({
-    queryKey: ["workspace-search", debouncedSearchQuery],
-    queryFn: () => searchWorkspaces(debouncedSearchQuery),
-    enabled: isAddFavoriteOpen,
+    queryKey: ["workspace-search", "sidebar-favorites", debouncedSearchQuery, favoriteIds],
+    queryFn: () => searchWorkspaces(debouncedSearchQuery, { scopes: ["favorites"], favoriteIds }),
+    enabled: isAddFavoriteOpen && favoriteIds.length > 5,
     staleTime: 30_000,
   });
 
@@ -94,9 +68,13 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
     .map((favoriteId) => user.organizations.find((organization) => organization.id === favoriteId))
     .filter((organization) => organization !== undefined);
   const visibleFavorites = showAllFavorites ? favorites : favorites.slice(0, 5);
-  const availableWorkspaces = (workspaceSearch.data ?? []).filter(
-    (organization) => !favoriteIds.includes(organization.id),
-  );
+  const searchedWorkspaces = workspaceSearch.data ?? [];
+
+  useEffect(() => {
+    if (!isAddFavoriteOpen || favoriteIds.length > 5) return;
+    setIsAddFavoriteOpen(false);
+    setSearchQuery("");
+  }, [favoriteIds.length, isAddFavoriteOpen]);
 
   return (
     <aside className="text-card-foreground relative flex w-full flex-col border-b border-white/80 bg-white/55 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_8px_28px_rgba(38,163,142,0.10)] backdrop-blur-2xl backdrop-saturate-150 md:fixed md:inset-y-3 md:left-3 md:z-20 md:w-60 md:rounded-2xl md:border md:shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_12px_40px_rgba(24,25,48,0.10)]">
@@ -114,26 +92,28 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
           FAVORITES
         </h2>
         <div className="flex items-center gap-1">
-          <Button
-            variant="ghost"
-            size="icon-xs"
-            onClick={() => {
-              setIsAddFavoriteOpen((open) => !open);
-              setSearchQuery("");
-            }}
-            aria-label={
-              isAddFavoriteOpen ? "Close favorite workspace search" : "Add favorite workspace"
-            }
-            aria-expanded={isAddFavoriteOpen}
-            aria-controls={isAddFavoriteOpen ? "favorite-workspace-search" : undefined}
-            title={isAddFavoriteOpen ? "Close search" : "Search workspaces to add to favorites"}
-          >
-            {isAddFavoriteOpen ? (
-              <X aria-hidden="true" className="size-4" />
-            ) : (
-              <Search aria-hidden="true" className="size-4" />
-            )}
-          </Button>
+          {favoriteIds.length > 5 && (
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => {
+                setIsAddFavoriteOpen((open) => !open);
+                setSearchQuery("");
+              }}
+              aria-label={
+                isAddFavoriteOpen ? "Close favorite workspace search" : "Search favorites"
+              }
+              aria-expanded={isAddFavoriteOpen}
+              aria-controls={isAddFavoriteOpen ? "favorite-workspace-search" : undefined}
+              title={isAddFavoriteOpen ? "Close search" : "Search favorite workspaces"}
+            >
+              {isAddFavoriteOpen ? (
+                <X aria-hidden="true" className="size-4" />
+              ) : (
+                <Search aria-hidden="true" className="size-4" />
+              )}
+            </Button>
+          )}
           <span title={canCreate ? undefined : workspaceLimitMessage}>
             <Button
               variant="ghost"
@@ -179,30 +159,30 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
               <p className="text-muted-foreground px-2 py-2 text-xs" role="alert">
                 Could not load workspaces.
               </p>
-            ) : availableWorkspaces.length > 0 ? (
-              availableWorkspaces.map((organization) => (
-                <Button
-                  className="text-muted-foreground hover:bg-accent hover:text-accent-foreground flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm"
-                  key={organization.id}
-                  disabled={isFavoritePending}
-                  onClick={() => toggleFavorite(organization.id)}
-                  variant="ghost"
-                  type="button"
-                >
-                  <span className="min-w-0 flex-1 truncate">{organization.name}</span>
-                  <Star aria-hidden="true" className="text-primary size-4" />
-                </Button>
-              ))
+            ) : searchedWorkspaces.length > 0 ? (
+              searchedWorkspaces.map((organization) => {
+                const isFavorite = favoriteIds.includes(organization.id);
+                return (
+                  <Button
+                    aria-label={`${isFavorite ? "Remove" : "Add"} ${organization.name} ${isFavorite ? "from" : "to"} favorites`}
+                    className="text-muted-foreground hover:bg-accent hover:text-accent-foreground group flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left text-sm"
+                    key={organization.id}
+                    disabled={isFavoritePending}
+                    onClick={() => toggleFavorite(organization.id)}
+                    title={isFavorite ? "Remove from favorites" : "Add to favorites"}
+                    variant="ghost"
+                    type="button"
+                  >
+                    <span className="min-w-0 flex-1 truncate">{organization.name}</span>
+                    <Star
+                      aria-hidden="true"
+                      className={`text-primary size-4 ${isFavorite ? "fill-current group-hover:fill-none" : "group-hover:fill-current"}`}
+                    />
+                  </Button>
+                );
+              })
             ) : (
-              <p className="text-muted-foreground px-2 py-2 text-xs">
-                {(workspaceSearch.data?.length ?? 0) > 0 &&
-                workspaceSearch.data?.every((organization) =>
-                  favoriteIds.includes(organization.id),
-                ) &&
-                !debouncedSearchQuery
-                  ? "All your workspaces are favorites."
-                  : "No matching workspaces."}
-              </p>
+              <p className="text-muted-foreground px-2 py-2 text-xs">No matching workspaces.</p>
             )}
           </div>
         </div>
@@ -214,34 +194,34 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
             {visibleFavorites.map((organization, index) => (
               <li className="group relative flex items-center gap-1" key={organization.id}>
                 <Button
-                  className={`flex h-10 min-w-0 flex-1 items-center gap-3 rounded-xl px-2.5 text-left text-sm transition-colors ${activeId === organization.id ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground hover:bg-black/[0.04]"}`}
+                  className={`flex h-10 min-w-0 flex-1 items-center gap-3 rounded-xl px-2.5 text-left text-sm transition-colors ${activeId === organization.id ? "text-foreground bg-transparent hover:bg-black/[0.04]" : "text-muted-foreground hover:text-foreground hover:bg-black/[0.04]"}`}
                   onClick={() => onSelect(organization.id)}
                   variant="ghost"
                   type="button"
                 >
                   <span
-                    className={`grid size-7 shrink-0 place-items-center rounded-lg ${index % 2 === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"}`}
+                    className={`relative grid size-7 shrink-0 place-items-center rounded-lg ${index % 2 === 0 ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"} group-focus-within:invisible group-hover:invisible`}
                   >
-                    {(() => {
-                      const Icon =
-                        workspaceIcons[organization.icon as keyof typeof workspaceIcons] ??
-                        Building2;
-                      return (
-                        <Icon
-                          aria-hidden="true"
-                          className="size-4 transition-opacity group-focus-within:opacity-0 group-hover:opacity-0"
-                        />
-                      );
-                    })()}
+                    <>
+                      <WorkspaceMark
+                        icon={organization.icon}
+                        className="size-4 transition-opacity group-focus-within:opacity-0 group-hover:opacity-0"
+                      />
+                      <span className="pointer-events-none absolute -right-1 -bottom-1 grid size-3.5 place-items-center rounded-full bg-amber-100 text-amber-600 ring-1 ring-white">
+                        <Star aria-hidden="true" className="size-2.5 fill-current" />
+                      </span>
+                    </>
                   </span>
                   <span className="min-w-0 flex-1 truncate font-medium">{organization.name}</span>
                   {activeId === organization.id && (
-                    <ChevronRight aria-hidden="true" className="text-muted-foreground size-4" />
+                    <span className="grid size-4 shrink-0 place-items-center">
+                      <ChevronRight aria-hidden="true" className="text-muted-foreground size-4" />
+                    </span>
                   )}
                 </Button>
                 <Button
                   aria-label={`Remove ${organization.name} from favorites`}
-                  className="absolute left-2.5 grid size-7 place-items-center rounded-lg bg-amber-100 text-amber-600 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-amber-200 focus-visible:opacity-100"
+                  className="absolute left-2.5 grid size-7 place-items-center rounded-lg bg-amber-100 text-amber-600 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 hover:bg-amber-200 hover:text-amber-600 focus-visible:opacity-100"
                   disabled={isFavoritePending}
                   onClick={() => toggleFavorite(organization.id)}
                   title="Remove favorite"
@@ -249,7 +229,7 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
                   variant="ghost"
                   size="icon-xs"
                 >
-                  <Star aria-hidden="true" className="size-4 fill-current" />
+                  <Star aria-hidden="true" className="size-4" />
                 </Button>
               </li>
             ))}

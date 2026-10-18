@@ -56,6 +56,7 @@ export function WorkspaceGroup({
                   <WorkspaceCard
                     layout="list"
                     workspace={workspace}
+                    isFavorite={id === "favorites"}
                     isFavoritePending={isFavoritePending}
                     onToggleFavorite={onToggleFavorite}
                     showFavoriteAction={Boolean(onToggleFavorite)}
@@ -70,6 +71,7 @@ export function WorkspaceGroup({
                   <WorkspaceCard
                     layout="card"
                     workspace={workspace}
+                    isFavorite={id === "favorites"}
                     isFavoritePending={isFavoritePending}
                     onToggleFavorite={onToggleFavorite}
                     showFavoriteAction={Boolean(onToggleFavorite)}

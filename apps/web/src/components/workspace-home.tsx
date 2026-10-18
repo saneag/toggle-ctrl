@@ -287,6 +287,8 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
                 emptyMessage="Favorite a workspace from the sidebar to keep it close at hand."
                 isCollapsed={isFavoritesCollapsed}
                 onToggle={toggleSection}
+                isFavoritePending={isFavoritePending}
+                onToggleFavorite={toggleFavorite}
               />
               <WorkspaceGroup
                 id="admin"
@@ -315,10 +317,12 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
         </section>
       </main>
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent>
+        <DialogContent className="border-0">
           <DialogHeader>
-            <DialogTitle>Create workspace</DialogTitle>
-            <DialogDescription>Choose a name for your new workspace.</DialogDescription>
+            <DialogTitle className="text-lg font-semibold">Create workspace</DialogTitle>
+            <DialogDescription className="text-muted-foreground text-sm">
+              Choose a name for your new workspace.
+            </DialogDescription>
           </DialogHeader>
           <form className="space-y-5" onSubmit={submitOrganization}>
             <label className="block space-y-2 text-sm font-medium" htmlFor="workspace-name">
