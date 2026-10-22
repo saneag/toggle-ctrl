@@ -6,6 +6,7 @@ model Invitation {
   expiresAt      DateTime
   acceptedAt     DateTime?
   createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
   organizationId String
   invitedById    String
   organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)

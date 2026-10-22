@@ -4,6 +4,7 @@ model Organization {
   icon        String       @default("flag")
   color       String       @default("teal")
   createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @default(now()) @updatedAt
   memberships Membership[]
   invitations Invitation[]
 }
