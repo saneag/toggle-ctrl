@@ -4,6 +4,7 @@ export type OrganizationSearchItem = {
   icon: string;
   color: string;
   role: string;
+  updatedAt: Date;
 };
 
 export type OrganizationSearchPage = {

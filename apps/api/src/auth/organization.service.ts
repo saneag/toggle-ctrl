@@ -193,8 +193,8 @@ export class OrganizationService {
       this.prisma.organization.count({ where: organizationWhere }),
       this.prisma.organization.findMany({
         where: organizationWhere,
-        select: { id: true, name: true, icon: true, color: true },
-        orderBy: [{ name: "asc" }, { id: "asc" }],
+        select: { id: true, name: true, icon: true, color: true, updatedAt: true },
+        orderBy: [{ updatedAt: "desc" }, { name: "asc" }, { id: "asc" }],
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

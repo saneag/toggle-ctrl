@@ -37,6 +37,7 @@ export type Organization = {
   icon: WorkspaceIcon;
   color: WorkspaceColor;
   role: string;
+  updatedAt?: string;
 };
 export type OrganizationSummary = {
   total: number;
