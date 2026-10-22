@@ -7,9 +7,9 @@ import {
   Logger,
 } from "@nestjs/common";
 
-import { Prisma } from "@prisma/client";
 import type { Request, Response } from "express";
 
+import { Prisma } from "../generated/prisma/client.js";
 import type { DatabaseErrorResponse } from "./api-exception.types.js";
 
 @Catch()

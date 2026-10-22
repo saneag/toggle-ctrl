@@ -17,6 +17,7 @@ export type SidebarProps = {
   onLogout: () => void;
 };
 export type DashboardProps = { user: CurrentUser; organizationId?: string };
+export type HelpCenterProps = { user: CurrentUser };
 export type WorkspaceHomeProps = { user: CurrentUser };
 export type WorkspaceMarkProps = { icon?: WorkspaceIcon | string | null; className?: string };
 export type WorkspaceColorStyle = { icon: string; swatch: string };

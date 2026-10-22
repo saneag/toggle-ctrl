@@ -7,6 +7,7 @@ import { LoaderCircle } from "lucide-react";
 
 import { AuthScreen } from "./components/auth-screen.js";
 import { Dashboard } from "./components/dashboard.js";
+import { HelpCenter } from "./components/help-center.js";
 import { SetPasswordForm } from "./components/set-password-form.js";
 import { Button } from "./components/ui/button.js";
 import { WorkspaceHome } from "./components/workspace-home.js";
@@ -86,6 +87,7 @@ export function App() {
         path="/workspaces/:organizationId"
         element={user ? <WorkspaceRoute user={user} /> : <AuthScreen />}
       />
+      <Route path="/help" element={user ? <HelpCenter user={user} /> : <AuthScreen />} />
       <Route
         path="/set-password"
         element={

@@ -5,6 +5,7 @@ node_modules
 *.tsbuildinfo
 dist
 coverage
+apps/api/src/generated/prisma
 dist-ssr
 *.local
 .env

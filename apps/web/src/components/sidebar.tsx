@@ -265,13 +265,17 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
       </nav>
 
       <div className="mt-5 hidden space-y-3 md:block">
-        <div className="border-border/60 rounded-xl border bg-white/45 px-3 py-3 text-center">
+        <Link
+          to="/help"
+          aria-label="Need a hand? Visit our help center"
+          className="border-border/60 hover:border-primary/40 hover:bg-secondary/50 focus-visible:ring-ring block rounded-xl border bg-white/45 px-3 py-3 text-center transition-colors focus-visible:ring-2 focus-visible:outline-none"
+        >
           <span className="border-border text-muted-foreground mx-auto mb-2 grid size-7 place-items-center rounded-full border text-sm font-medium">
             ?
           </span>
           <p className="text-foreground text-sm font-medium">Need a hand?</p>
           <small className="text-muted-foreground mt-1 block text-xs">Visit our help center</small>
-        </div>
+        </Link>
 
         <div
           className="border-border/60 relative rounded-xl border bg-white/60 p-3 text-center"
