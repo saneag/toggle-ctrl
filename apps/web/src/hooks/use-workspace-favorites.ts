@@ -69,6 +69,7 @@ export function useWorkspaceFavorites(userId: string) {
     favoriteIds,
     favoriteWorkspaces,
     isFavoriteLoading: favoritesQuery.isPending,
+    hasLoadedFavorites: favoritesQuery.isSuccess,
     isFavoritePending: favoriteMutation.isPending,
     toggleFavorite,
   };

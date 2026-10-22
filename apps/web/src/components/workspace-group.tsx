@@ -1,4 +1,6 @@
-import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import type { UIEvent } from "react";
+
+import { ChevronDown } from "lucide-react";
 
 import { Button } from "./ui/button.js";
 import { WorkspaceCard } from "./workspace-card.js";
@@ -12,9 +14,9 @@ export function WorkspaceGroup({
   emptyMessage,
   isCollapsed,
   workspaceCount,
-  currentPage,
-  totalPages,
-  onPageChange,
+  hasMoreWorkspaces,
+  isLoadingMoreWorkspaces,
+  onLoadMoreWorkspaces,
   isLoading = false,
   onToggle,
   isFavoritePending = false,
@@ -23,6 +25,17 @@ export function WorkspaceGroup({
   const layout = workspaces.length > 5 ? "list" : "card";
   const headingId = `workspace-group-${id}`;
   const contentId = `${headingId}-content`;
+
+  function handleListScroll(event: UIEvent<HTMLUListElement>) {
+    const list = event.currentTarget;
+    if (
+      list.scrollHeight - list.scrollTop - list.clientHeight < 120 &&
+      hasMoreWorkspaces &&
+      !isLoadingMoreWorkspaces
+    ) {
+      onLoadMoreWorkspaces();
+    }
+  }
 
   return (
     <section aria-labelledby={headingId}>
@@ -72,7 +85,10 @@ export function WorkspaceGroup({
               {emptyMessage}
             </p>
           ) : layout === "list" ? (
-            <ul className="border-border bg-card divide-border max-h-80 divide-y overflow-y-auto rounded-xl border">
+            <ul
+              className="border-border bg-card divide-border max-h-80 divide-y overflow-y-auto rounded-xl border"
+              onScroll={handleListScroll}
+            >
               {workspaces.map((workspace) => (
                 <li key={workspace.id}>
                   <WorkspaceCard
@@ -85,6 +101,11 @@ export function WorkspaceGroup({
                   />
                 </li>
               ))}
+              {isLoadingMoreWorkspaces && (
+                <li className="text-muted-foreground px-4 py-3 text-center text-sm" role="status">
+                  Loading more workspaces…
+                </li>
+              )}
             </ul>
           ) : (
             <ul className="grid gap-4 sm:grid-cols-2">
@@ -101,33 +122,6 @@ export function WorkspaceGroup({
                 </li>
               ))}
             </ul>
-          )}
-          {totalPages > 1 && (
-            <div className="mt-3 flex items-center justify-end gap-2">
-              <span className="text-muted-foreground mr-1 text-xs">
-                Page {currentPage} of {totalPages}
-              </span>
-              <Button
-                aria-label={`Previous ${title} page`}
-                disabled={currentPage <= 1}
-                onClick={() => onPageChange(currentPage - 1)}
-                size="icon-sm"
-                type="button"
-                variant="outline"
-              >
-                <ChevronLeft aria-hidden="true" className="size-4" />
-              </Button>
-              <Button
-                aria-label={`Next ${title} page`}
-                disabled={currentPage >= totalPages}
-                onClick={() => onPageChange(currentPage + 1)}
-                size="icon-sm"
-                type="button"
-                variant="outline"
-              >
-                <ChevronRight aria-hidden="true" className="size-4" />
-              </Button>
-            </div>
           )}
         </div>
       )}

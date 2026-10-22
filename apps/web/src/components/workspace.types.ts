@@ -49,7 +49,6 @@ export type WorkspaceCardProps = {
 export type WorkspaceGroupId = "favorites" | "admin" | "assigned";
 export type WorkspaceSearchScope = WorkspaceGroupId;
 export type WorkspaceSectionCollapseState = Partial<Record<WorkspaceGroupId, boolean>>;
-export type WorkspaceSectionPages = Record<WorkspaceGroupId, number>;
 export type WorkspaceGroupProps = {
   id: WorkspaceGroupId;
   title: string;
@@ -58,9 +57,9 @@ export type WorkspaceGroupProps = {
   emptyMessage: string;
   isCollapsed: boolean;
   workspaceCount: number;
-  currentPage: number;
-  totalPages: number;
-  onPageChange: (page: number) => void;
+  hasMoreWorkspaces: boolean;
+  isLoadingMoreWorkspaces: boolean;
+  onLoadMoreWorkspaces: () => void;
   isLoading?: boolean;
   onToggle: (id: WorkspaceGroupId, isCollapsed: boolean) => void;
   isFavoritePending?: boolean;

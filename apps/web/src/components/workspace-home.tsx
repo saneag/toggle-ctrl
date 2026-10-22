@@ -2,8 +2,8 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { useNavigate } from "react-router-dom";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Filter, Search, X } from "lucide-react";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Filter, Search, X } from "lucide-react";
 import { toast } from "sonner";
 
 import { useWorkspaceFavorites } from "../hooks/use-workspace-favorites.js";
@@ -36,7 +36,6 @@ import type {
   WorkspaceHomeProps,
   WorkspaceSearchScope,
   WorkspaceSectionCollapseState,
-  WorkspaceSectionPages,
 } from "./workspace.types.js";
 
 const WORKSPACE_PAGE_SIZE = 50;
@@ -47,15 +46,9 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
   const [workspaceSearch, setWorkspaceSearch] = useState("");
   const [debouncedWorkspaceSearch, setDebouncedWorkspaceSearch] = useState("");
   const [workspaceSearchScopes, setWorkspaceSearchScopes] = useState<WorkspaceSearchScope[]>([]);
-  const [searchPage, setSearchPage] = useState(1);
-  const [sectionPages, setSectionPages] = useState<WorkspaceSectionPages>({
-    favorites: 1,
-    admin: 1,
-    assigned: 1,
-  });
   const [sectionCollapseOverrides, setSectionCollapseOverrides] =
     useState<WorkspaceSectionCollapseState>({});
-  const { favoriteIds, favoriteWorkspaces, isFavoriteLoading, isFavoritePending, toggleFavorite } =
+  const { favoriteIds, favoriteWorkspaces, hasLoadedFavorites, isFavoritePending, toggleFavorite } =
     useWorkspaceFavorites(user.id);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -76,33 +69,17 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
     return () => window.clearTimeout(debounceTimer);
   }, [workspaceSearch]);
 
-  useEffect(() => setSearchPage(1), [workspaceSearch]);
-
-  useEffect(() => {
-    if (!summary) return;
-    setSectionPages((pages) => ({
-      favorites: Math.min(
-        pages.favorites,
-        Math.max(1, Math.ceil(summary.favorites / WORKSPACE_PAGE_SIZE)),
-      ),
-      admin: Math.min(
-        pages.admin,
-        Math.max(1, Math.ceil(summary.adminUnfavorited / WORKSPACE_PAGE_SIZE)),
-      ),
-      assigned: Math.min(
-        pages.assigned,
-        Math.max(1, Math.ceil(summary.assignedUnfavorited / WORKSPACE_PAGE_SIZE)),
-      ),
-    }));
-  }, [summary]);
-
-  const workspaceResults = useQuery({
-    queryKey: ["workspace-search", debouncedWorkspaceSearch, workspaceSearchScopes, searchPage],
-    queryFn: () =>
+  const workspaceResults = useInfiniteQuery({
+    queryKey: ["workspace-search", debouncedWorkspaceSearch, workspaceSearchScopes],
+    queryFn: ({ pageParam }) =>
       searchWorkspaces(debouncedWorkspaceSearch, {
         scopes: workspaceSearchScopes,
-        page: searchPage,
+        page: pageParam,
+        pageSize: WORKSPACE_PAGE_SIZE,
       }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page * lastPage.pageSize < lastPage.total ? lastPage.page + 1 : undefined,
     enabled: Boolean(debouncedWorkspaceSearch),
     staleTime: 30_000,
   });
@@ -111,44 +88,76 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
     setSectionCollapseOverrides((overrides) => ({ ...overrides, [id]: !isCollapsed }));
   }
 
-  function changeSectionPage(id: WorkspaceGroupId, page: number) {
-    setSectionPages((pages) => ({ ...pages, [id]: page }));
-  }
-
   const isFavoritesCollapsed =
     sectionCollapseOverrides.favorites ?? (summary?.favorites ?? 0) === 0;
   const isAdminCollapsed = sectionCollapseOverrides.admin ?? (summary?.adminUnfavorited ?? 0) === 0;
   const isAssignedCollapsed =
     sectionCollapseOverrides.assigned ?? (summary?.assignedUnfavorited ?? 0) === 0;
 
-  const assignedWorkspacesQuery = useQuery({
-    queryKey: ["workspace-search", "home-section", "assigned", sectionPages.assigned],
-    queryFn: () =>
+  const assignedWorkspacesQuery = useInfiniteQuery({
+    queryKey: ["workspace-search", "home-section", "assigned"],
+    queryFn: ({ pageParam }) =>
       searchWorkspaces("", {
         scopes: ["assigned"],
         excludeFavorites: true,
-        page: sectionPages.assigned,
+        page: pageParam,
+        pageSize: WORKSPACE_PAGE_SIZE,
       }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page * lastPage.pageSize < lastPage.total ? lastPage.page + 1 : undefined,
     enabled: !workspaceSearch.trim() && !isAssignedCollapsed,
     staleTime: 30_000,
   });
-  const adminWorkspacesQuery = useQuery({
-    queryKey: ["workspace-search", "home-section", "admin", sectionPages.admin],
-    queryFn: () =>
+  const adminWorkspacesQuery = useInfiniteQuery({
+    queryKey: ["workspace-search", "home-section", "admin"],
+    queryFn: ({ pageParam }) =>
       searchWorkspaces("", {
         scopes: ["admin"],
         excludeFavorites: true,
-        page: sectionPages.admin,
+        page: pageParam,
+        pageSize: WORKSPACE_PAGE_SIZE,
       }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page * lastPage.pageSize < lastPage.total ? lastPage.page + 1 : undefined,
     enabled: !workspaceSearch.trim() && !isAdminCollapsed,
     staleTime: 30_000,
   });
-  const favoriteWorkspacesPageQuery = useQuery({
-    queryKey: ["workspace-search", "home-section", "favorites", sectionPages.favorites],
-    queryFn: () => searchWorkspaces("", { scopes: ["favorites"], page: sectionPages.favorites }),
-    enabled: !workspaceSearch.trim() && !isFavoritesCollapsed && sectionPages.favorites > 1,
+  const favoriteWorkspacesQuery = useInfiniteQuery({
+    queryKey: ["workspace-search", "home-section", "favorites"],
+    queryFn: ({ pageParam }) =>
+      searchWorkspaces("", {
+        scopes: ["favorites"],
+        page: pageParam,
+        pageSize: WORKSPACE_PAGE_SIZE,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page * lastPage.pageSize < lastPage.total ? lastPage.page + 1 : undefined,
+    initialData: hasLoadedFavorites
+      ? {
+          pages: [
+            {
+              items: favoriteWorkspaces,
+              total: summary?.favorites ?? favoriteWorkspaces.length,
+              page: 1,
+              pageSize: WORKSPACE_PAGE_SIZE,
+            },
+          ],
+          pageParams: [1],
+        }
+      : undefined,
+    enabled: !workspaceSearch.trim() && !isFavoritesCollapsed,
     staleTime: 30_000,
   });
+
+  const searchWorkspacesList = workspaceResults.data?.pages.flatMap((page) => page.items) ?? [];
+  const favoriteHomeWorkspaces =
+    favoriteWorkspacesQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const adminHomeWorkspaces = adminWorkspacesQuery.data?.pages.flatMap((page) => page.items) ?? [];
+  const assignedHomeWorkspaces =
+    assignedWorkspacesQuery.data?.pages.flatMap((page) => page.items) ?? [];
 
   const organizationMutation = useMutation({
     mutationFn: createOrganization,
@@ -203,7 +212,6 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
                 id="home-workspace-search"
                 ref={searchInputRef}
                 onChange={(event) => {
-                  setSearchPage(1);
                   setWorkspaceSearch(event.target.value);
                 }}
                 placeholder="Search workspaces"
@@ -215,7 +223,6 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
                   aria-label="Clear workspace search"
                   className="text-muted-foreground shrink-0"
                   onClick={() => {
-                    setSearchPage(1);
                     setWorkspaceSearch("");
                     searchInputRef.current?.focus();
                   }}
@@ -258,7 +265,6 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
                 <DropdownMenuCheckboxItem
                   checked={workspaceSearchScopes.length === 0}
                   onCheckedChange={() => {
-                    setSearchPage(1);
                     setWorkspaceSearchScopes([]);
                   }}
                 >
@@ -267,7 +273,6 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
                 <DropdownMenuCheckboxItem
                   checked={workspaceSearchScopes.includes("favorites")}
                   onCheckedChange={(checked) => {
-                    setSearchPage(1);
                     setWorkspaceSearchScopes((scopes) =>
                       checked
                         ? [...scopes, "favorites"]
@@ -280,7 +285,6 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
                 <DropdownMenuCheckboxItem
                   checked={workspaceSearchScopes.includes("admin")}
                   onCheckedChange={(checked) => {
-                    setSearchPage(1);
                     setWorkspaceSearchScopes((scopes) =>
                       checked ? [...scopes, "admin"] : scopes.filter((scope) => scope !== "admin"),
                     );
@@ -291,7 +295,6 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
                 <DropdownMenuCheckboxItem
                   checked={workspaceSearchScopes.includes("assigned")}
                   onCheckedChange={(checked) => {
-                    setSearchPage(1);
                     setWorkspaceSearchScopes((scopes) =>
                       checked
                         ? [...scopes, "assigned"]
@@ -312,11 +315,23 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
                 <p className="text-muted-foreground py-5 text-sm" role="alert">
                   Could not load workspaces.
                 </p>
-              ) : (workspaceResults.data?.items.length ?? 0) === 0 ? (
+              ) : searchWorkspacesList.length === 0 ? (
                 <p className="text-muted-foreground py-5 text-sm">No matching workspaces.</p>
               ) : (
-                <ul className="border-border bg-card divide-border max-h-96 divide-y overflow-y-auto rounded-xl border">
-                  {workspaceResults.data?.items.map((workspace) => (
+                <ul
+                  className="border-border bg-card divide-border max-h-96 divide-y overflow-y-auto rounded-xl border"
+                  onScroll={(event) => {
+                    const list = event.currentTarget;
+                    if (
+                      list.scrollHeight - list.scrollTop - list.clientHeight < 120 &&
+                      workspaceResults.hasNextPage &&
+                      !workspaceResults.isFetchingNextPage
+                    ) {
+                      void workspaceResults.fetchNextPage();
+                    }
+                  }}
+                >
+                  {searchWorkspacesList.map((workspace) => (
                     <li key={workspace.id}>
                       <WorkspaceCard
                         layout="list"
@@ -328,38 +343,15 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
                       />
                     </li>
                   ))}
+                  {workspaceResults.isFetchingNextPage && (
+                    <li
+                      className="text-muted-foreground px-4 py-3 text-center text-sm"
+                      role="status"
+                    >
+                      Loading more workspaces…
+                    </li>
+                  )}
                 </ul>
-              )}
-              {workspaceResults.data && workspaceResults.data.total > WORKSPACE_PAGE_SIZE && (
-                <div className="mt-3 flex items-center justify-end gap-2">
-                  <span className="text-muted-foreground mr-1 text-xs">
-                    Page {searchPage} of{" "}
-                    {Math.ceil(workspaceResults.data.total / WORKSPACE_PAGE_SIZE)}
-                  </span>
-                  <Button
-                    aria-label="Previous search results page"
-                    disabled={searchPage <= 1 || workspaceResults.isFetching}
-                    onClick={() => setSearchPage((page) => page - 1)}
-                    size="icon-sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    <ChevronLeft aria-hidden="true" className="size-4" />
-                  </Button>
-                  <Button
-                    aria-label="Next search results page"
-                    disabled={
-                      searchPage >= Math.ceil(workspaceResults.data.total / WORKSPACE_PAGE_SIZE) ||
-                      workspaceResults.isFetching
-                    }
-                    onClick={() => setSearchPage((page) => page + 1)}
-                    size="icon-sm"
-                    type="button"
-                    variant="outline"
-                  >
-                    <ChevronRight aria-hidden="true" className="size-4" />
-                  </Button>
-                </div>
               )}
             </section>
           ) : (
@@ -368,27 +360,14 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
                 id="favorites"
                 title="Favorites"
                 description="Your pinned workspaces for quick access."
-                workspaces={
-                  sectionPages.favorites === 1
-                    ? favoriteWorkspaces
-                    : (favoriteWorkspacesPageQuery.data?.items ?? [])
-                }
+                workspaces={favoriteHomeWorkspaces}
                 emptyMessage="Favorite a workspace from the sidebar to keep it close at hand."
                 isCollapsed={isFavoritesCollapsed}
                 workspaceCount={summary?.favorites ?? favoriteWorkspaces.length}
-                currentPage={sectionPages.favorites}
-                totalPages={Math.max(
-                  1,
-                  Math.ceil(
-                    (summary?.favorites ?? favoriteWorkspaces.length) / WORKSPACE_PAGE_SIZE,
-                  ),
-                )}
-                onPageChange={(page) => changeSectionPage("favorites", page)}
-                isLoading={
-                  sectionPages.favorites === 1
-                    ? isFavoriteLoading
-                    : favoriteWorkspacesPageQuery.isPending
-                }
+                isLoading={favoriteWorkspacesQuery.isPending}
+                hasMoreWorkspaces={favoriteWorkspacesQuery.hasNextPage ?? false}
+                isLoadingMoreWorkspaces={favoriteWorkspacesQuery.isFetchingNextPage}
+                onLoadMoreWorkspaces={() => void favoriteWorkspacesQuery.fetchNextPage()}
                 onToggle={toggleSection}
                 isFavoritePending={isFavoritePending}
                 onToggleFavorite={toggleFavorite}
@@ -397,17 +376,16 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
                 id="admin"
                 title="Admin workspaces"
                 description="Workspaces where you manage members and settings."
-                workspaces={adminWorkspacesQuery.data?.items ?? []}
+                workspaces={adminHomeWorkspaces}
                 emptyMessage="You don’t have admin access to any workspaces."
                 isCollapsed={isAdminCollapsed}
-                workspaceCount={summary?.adminUnfavorited ?? adminWorkspacesQuery.data?.total ?? 0}
-                currentPage={sectionPages.admin}
-                totalPages={Math.max(
-                  1,
-                  Math.ceil((summary?.adminUnfavorited ?? 0) / WORKSPACE_PAGE_SIZE),
-                )}
-                onPageChange={(page) => changeSectionPage("admin", page)}
+                workspaceCount={
+                  summary?.adminUnfavorited ?? adminWorkspacesQuery.data?.pages[0]?.total ?? 0
+                }
                 isLoading={adminWorkspacesQuery.isPending}
+                hasMoreWorkspaces={adminWorkspacesQuery.hasNextPage ?? false}
+                isLoadingMoreWorkspaces={adminWorkspacesQuery.isFetchingNextPage}
+                onLoadMoreWorkspaces={() => void adminWorkspacesQuery.fetchNextPage()}
                 onToggle={toggleSection}
                 isFavoritePending={isFavoritePending}
                 onToggleFavorite={toggleFavorite}
@@ -416,19 +394,16 @@ export function WorkspaceHome({ user }: WorkspaceHomeProps) {
                 id="assigned"
                 title="Viewer and manager workspaces"
                 description="Workspaces where you have viewer or manager access."
-                workspaces={assignedWorkspacesQuery.data?.items ?? []}
+                workspaces={assignedHomeWorkspaces}
                 emptyMessage="You don’t have viewer or manager access to any workspaces."
                 isCollapsed={isAssignedCollapsed}
                 workspaceCount={
-                  summary?.assignedUnfavorited ?? assignedWorkspacesQuery.data?.total ?? 0
+                  summary?.assignedUnfavorited ?? assignedWorkspacesQuery.data?.pages[0]?.total ?? 0
                 }
-                currentPage={sectionPages.assigned}
-                totalPages={Math.max(
-                  1,
-                  Math.ceil((summary?.assignedUnfavorited ?? 0) / WORKSPACE_PAGE_SIZE),
-                )}
-                onPageChange={(page) => changeSectionPage("assigned", page)}
                 isLoading={assignedWorkspacesQuery.isPending}
+                hasMoreWorkspaces={assignedWorkspacesQuery.hasNextPage ?? false}
+                isLoadingMoreWorkspaces={assignedWorkspacesQuery.isFetchingNextPage}
+                onLoadMoreWorkspaces={() => void assignedWorkspacesQuery.fetchNextPage()}
                 onToggle={toggleSection}
                 isFavoritePending={isFavoritePending}
                 onToggleFavorite={toggleFavorite}

@@ -3,7 +3,7 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpRight, Pencil, RefreshCw, UserPlus } from "lucide-react";
+import { ArrowUpRight, MoreHorizontal, Pencil, RefreshCw, Trash2, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import type {
@@ -15,6 +15,7 @@ import type {
 } from "../types.js";
 import { acceptInvitation } from "../utils/accept-invitation.js";
 import { createOrganization } from "../utils/create-organization.js";
+import { deleteOrganization } from "../utils/delete-organization.js";
 import { getInvitations } from "../utils/get-invitations.js";
 import { getMembers } from "../utils/get-members.js";
 import { getOrganizationSummary } from "../utils/get-organization-summary.js";
@@ -36,6 +37,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "./ui/dialog.js";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu.js";
 import { Input } from "./ui/input.js";
 import { workspaceColorStyles, workspaceIcons } from "./workspace-appearance.js";
 import type { DashboardProps } from "./workspace.types.js";
@@ -45,6 +52,8 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
   const activeId = organizationId;
   const [notice, setNotice] = useState("");
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deleteConfirmationName, setDeleteConfirmationName] = useState("");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [workspaceName, setWorkspaceName] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -150,6 +159,21 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
       setNotice(error.message);
     },
   });
+  const deleteOrganizationMutation = useMutation({
+    mutationFn: () => deleteOrganization(activeId, deleteConfirmationName),
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["organization-summary"] }),
+        queryClient.invalidateQueries({ queryKey: ["workspace-search"] }),
+        queryClient.invalidateQueries({ queryKey: ["workspace-favorites"] }),
+      ]);
+      setIsDeleteDialogOpen(false);
+      setDeleteConfirmationName("");
+      toast.success("Workspace deleted.");
+      navigate("/");
+    },
+    onError: (error) => toast.error(error.message),
+  });
   const acceptMutation = useMutation({
     mutationFn: acceptInvitation,
     onSuccess: async () => {
@@ -247,16 +271,60 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
           </div>
         </header>
         <section className="mx-auto w-full max-w-5xl p-5 sm:p-8">
-          <div className="mb-9 flex items-end justify-between gap-4">
+          <div className="mb-9">
             <div>
               <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider">
                 YOUR TEAM
               </p>
-              <div className="flex flex-wrap items-center gap-3">
-                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                  Good morning, {user.name.split(" ")[0]}
-                </h1>
-                {isAdmin && <Badge variant="secondary">ADMIN</Badge>}
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex min-w-0 flex-wrap items-center gap-3">
+                  <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                    Good morning, {user.name.split(" ")[0]}
+                  </h1>
+                  {isAdmin && <Badge variant="secondary">ADMIN</Badge>}
+                </div>
+                {isAdmin && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        aria-label="Workspace actions"
+                        className="border-border bg-card text-foreground hover:bg-accent shrink-0"
+                        size="icon-sm"
+                        variant="outline"
+                      >
+                        <MoreHorizontal aria-hidden="true" className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="start" className="border-border bg-card w-48">
+                      <DropdownMenuItem
+                        className="cursor-pointer"
+                        onSelect={() => {
+                          if (!organization) return;
+                          settingsMutation.reset();
+                          setSettingsErrorOrganizationId(null);
+                          setSettingsName(organization.name);
+                          setSettingsIcon((organization.icon || "flag") as WorkspaceIcon);
+                          setSettingsColor((organization.color || "teal") as WorkspaceColor);
+                          setIsSettingsOpen(true);
+                        }}
+                      >
+                        <Pencil aria-hidden="true" className="size-4" />
+                        Edit workspace
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        className="text-destructive focus:text-destructive cursor-pointer"
+                        onSelect={() => {
+                          setDeleteConfirmationName("");
+                          deleteOrganizationMutation.reset();
+                          setIsDeleteDialogOpen(true);
+                        }}
+                      >
+                        <Trash2 aria-hidden="true" className="size-4" />
+                        Delete workspace
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
               </div>
               <p className="text-muted-foreground mt-2 text-sm">
                 {organization
@@ -314,24 +382,6 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                   </p>
                 </div>
                 <div className="flex items-center gap-2 sm:gap-3">
-                  {isAdmin && (
-                    <Button
-                      className="border-border bg-card text-foreground hover:bg-accent"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => {
-                        settingsMutation.reset();
-                        setSettingsErrorOrganizationId(null);
-                        setSettingsName(organization.name);
-                        setSettingsIcon((organization.icon || "flag") as WorkspaceIcon);
-                        setSettingsColor((organization.color || "teal") as WorkspaceColor);
-                        setIsSettingsOpen(true);
-                      }}
-                    >
-                      <Pencil aria-hidden="true" className="mr-2 size-3.5" />
-                      Edit workspace
-                    </Button>
-                  )}
                   <Button
                     className="border-border bg-card text-foreground hover:bg-accent"
                     variant="outline"
@@ -545,6 +595,57 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                 </Button>
               </DialogFooter>
             </form>
+          </DialogContent>
+        )}
+      </Dialog>
+      <Dialog
+        open={isDeleteDialogOpen && Boolean(organization)}
+        onOpenChange={(open) => {
+          if (deleteOrganizationMutation.isPending) return;
+          setIsDeleteDialogOpen(open);
+          if (!open) setDeleteConfirmationName("");
+        }}
+      >
+        {organization && (
+          <DialogContent className="border-0">
+            <DialogHeader>
+              <DialogTitle className="text-xl font-semibold">Delete workspace?</DialogTitle>
+              <DialogDescription className="text-muted-foreground text-sm">
+                This permanently deletes this workspace and removes its members’ access. To
+                continue, enter the workspace name exactly as shown.
+              </DialogDescription>
+            </DialogHeader>
+            <label className="block space-y-2 text-sm font-medium" htmlFor="delete-workspace-name">
+              <span className="block">Workspace name</span>
+              <Input
+                autoFocus
+                id="delete-workspace-name"
+                onChange={(event) => setDeleteConfirmationName(event.target.value)}
+                value={deleteConfirmationName}
+              />
+            </label>
+            <DialogFooter>
+              <Button
+                className="border-border bg-card text-foreground hover:bg-accent"
+                disabled={deleteOrganizationMutation.isPending}
+                onClick={() => setIsDeleteDialogOpen(false)}
+                type="button"
+                variant="outline"
+              >
+                Cancel
+              </Button>
+              <Button
+                disabled={
+                  deleteConfirmationName !== organization.name ||
+                  deleteOrganizationMutation.isPending
+                }
+                onClick={() => deleteOrganizationMutation.mutate()}
+                type="button"
+                variant="destructive"
+              >
+                {deleteOrganizationMutation.isPending ? "Deleting…" : "Delete workspace"}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         )}
       </Dialog>

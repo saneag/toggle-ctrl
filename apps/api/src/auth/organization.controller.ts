@@ -101,4 +101,16 @@ export class OrganizationController {
     await this.sessions.validateCsrf(user.sessionId, csrf);
     return this.organizations.update(user.id, organizationId, readBody(body));
   }
+
+  @Delete(":organizationId")
+  async delete(
+    @Req() request: Request,
+    @Headers("x-csrf-token") csrf: string,
+    @Param("organizationId") organizationId: string,
+    @Body() body: unknown,
+  ) {
+    const user = await this.sessions.authenticate(readSessionCookie(request));
+    await this.sessions.validateCsrf(user.sessionId, csrf);
+    return this.organizations.delete(user.id, organizationId, readBody(body));
+  }
 }

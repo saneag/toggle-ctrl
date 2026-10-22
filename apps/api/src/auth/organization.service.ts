@@ -6,7 +6,11 @@ import type { OrganizationSearchPage } from "./types/organization-search-page.js
 import type { OrganizationSearchScope } from "./types/organization-search.js";
 import type { OrganizationSummary } from "./types/organization-summary.js";
 import type { OrganizationUpdateData } from "./types/organization-update.js";
-import type { CreateOrganizationInput, UpdateOrganizationInput } from "./types/request-payloads.js";
+import type {
+  CreateOrganizationInput,
+  DeleteOrganizationInput,
+  UpdateOrganizationInput,
+} from "./types/request-payloads.js";
 
 const organizationIcons = [
   "flag",
@@ -264,5 +268,35 @@ export class OrganizationService {
     if (!Object.keys(data).length)
       throw new HttpException("Workspace name, icon, or color is required", HttpStatus.BAD_REQUEST);
     return this.prisma.organization.update({ where: { id: organizationId }, data });
+  }
+
+  async delete(userId: string, organizationId: string, input: DeleteOrganizationInput) {
+    const membership = await this.prisma.membership.findUnique({
+      where: { organizationId_userId: { organizationId, userId } },
+      select: { role: true },
+    });
+    if (!membership) throw new HttpException("Workspace not found", HttpStatus.NOT_FOUND);
+    if (membership.role !== "ADMIN")
+      throw new HttpException("Admin access is required", HttpStatus.FORBIDDEN);
+
+    const organization = await this.prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    });
+    if (!organization) throw new HttpException("Workspace not found", HttpStatus.NOT_FOUND);
+    if (typeof input.name !== "string" || input.name !== organization.name) {
+      throw new HttpException(
+        "Enter the workspace name exactly to confirm deletion",
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    const result = await this.prisma.organization.deleteMany({
+      where: { id: organizationId, name: organization.name },
+    });
+    if (result.count === 0) {
+      throw new HttpException("Workspace name changed. Please try again.", HttpStatus.CONFLICT);
+    }
+    return { id: organizationId };
   }
 }
