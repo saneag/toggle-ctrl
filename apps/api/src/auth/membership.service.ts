@@ -95,8 +95,12 @@ export class MembershipService {
     actor: SessionUser,
     organizationId: string,
     userIds: string[],
+    invitationIds: string[],
   ): Promise<RemoveMembersResponse> {
     await this.requireAdmin(actor.id, organizationId);
+    if (userIds.length + invitationIds.length === 0) {
+      throw new BadRequestException("Select at least one member to remove");
+    }
     if (userIds.includes(actor.id)) {
       throw new BadRequestException("You cannot remove yourself from this workspace");
     }
@@ -104,10 +108,25 @@ export class MembershipService {
     return this.prisma.$transaction(async (tx) => {
       const memberships = await tx.membership.findMany({
         where: { organizationId, userId: { in: userIds } },
-        select: { userId: true },
+        select: { userId: true, role: true },
       });
-      if (memberships.length !== userIds.length) {
+      const invitations = await tx.invitation.findMany({
+        where: {
+          id: { in: invitationIds },
+          organizationId,
+          acceptedAt: null,
+          expiresAt: { gt: new Date() },
+        },
+        select: { id: true, role: true },
+      });
+      if (memberships.length !== userIds.length || invitations.length !== invitationIds.length) {
         throw new NotFoundException("One or more selected members were not found");
+      }
+      if (
+        memberships.some((membership) => membership.role === "ADMIN") ||
+        invitations.some((invitation) => invitation.role === "ADMIN")
+      ) {
+        throw new BadRequestException("Admins cannot be removed from this workspace");
       }
 
       const remainingAdmins = await tx.membership.count({
@@ -120,7 +139,10 @@ export class MembershipService {
       const result = await tx.membership.deleteMany({
         where: { organizationId, userId: { in: userIds } },
       });
-      return { deletedCount: result.count };
+      const removedInvitations = await tx.invitation.deleteMany({
+        where: { organizationId, id: { in: invitationIds } },
+      });
+      return { deletedCount: result.count + removedInvitations.count };
     });
   }
 

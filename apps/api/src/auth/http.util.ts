@@ -24,8 +24,8 @@ export function readId(value: unknown, label: string): string {
 }
 
 export function readIds(value: unknown, label: string): string[] {
-  if (!Array.isArray(value) || value.length === 0) {
-    throw new BadRequestException(`${label}s must be a non-empty array`);
+  if (!Array.isArray(value)) {
+    throw new BadRequestException(`${label}s must be an array`);
   }
   return [...new Set(value.map((item) => readId(item, label)))];
 }

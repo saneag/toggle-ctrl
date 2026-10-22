@@ -48,38 +48,59 @@ export function MembersPanel({
   onSelectedStatusesChange,
 }: MembersPanelProps) {
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [selectedInvitationIds, setSelectedInvitationIds] = useState<string[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const activeFilterCount = selectedRoles.length + selectedStatuses.length;
   const selectableMembers = isAdmin
-    ? members.filter((member) => member.status === "ACTIVE" && member.user.id !== currentUserId)
+    ? members.filter((member) => member.role !== "ADMIN" && member.user.id !== currentUserId)
     : [];
-  const selectableUserIds = selectableMembers.map((member) => member.user.id);
-  const selectedVisibleCount = selectableUserIds.filter((id) =>
-    selectedUserIds.includes(id),
-  ).length;
+  const selectableUserIds = selectableMembers
+    .filter((member) => member.status === "ACTIVE")
+    .map((member) => member.user.id);
+  const selectableInvitationIds = selectableMembers
+    .filter((member) => member.status === "INVITED")
+    .map((member) => member.id);
+  const selectedVisibleCount =
+    selectableUserIds.filter((id) => selectedUserIds.includes(id)).length +
+    selectableInvitationIds.filter((id) => selectedInvitationIds.includes(id)).length;
+  const selectedCount = selectedUserIds.length + selectedInvitationIds.length;
   const isAllVisibleSelected =
-    selectableUserIds.length > 0 && selectedVisibleCount === selectableUserIds.length;
+    selectableMembers.length > 0 && selectedVisibleCount === selectableMembers.length;
   const memberColumns = "grid-cols-[minmax(0,1fr)_7rem_6rem]";
 
-  function toggleMember(userId: string, checked: boolean) {
+  function toggleMember(member: (typeof members)[number], checked: boolean) {
+    if (member.status === "INVITED") {
+      setSelectedInvitationIds((current) =>
+        checked ? [...new Set([...current, member.id])] : current.filter((id) => id !== member.id),
+      );
+      return;
+    }
+
     setSelectedUserIds((current) =>
-      checked ? [...new Set([...current, userId])] : current.filter((id) => id !== userId),
+      checked
+        ? [...new Set([...current, member.user.id])]
+        : current.filter((id) => id !== member.user.id),
     );
   }
 
   function toggleVisibleMembers(checked: boolean) {
-    const visibleIds = new Set(selectableUserIds);
-    setSelectedUserIds((current) =>
-      checked
-        ? [...new Set([...current, ...selectableUserIds])]
-        : current.filter((id) => !visibleIds.has(id)),
-    );
+    const visibleUserIds = new Set(selectableUserIds);
+    const visibleInvitationIds = new Set(selectableInvitationIds);
+    setSelectedUserIds((current) => {
+      if (checked) return [...new Set([...current, ...selectableUserIds])];
+      return current.filter((id) => !visibleUserIds.has(id));
+    });
+    setSelectedInvitationIds((current) => {
+      if (checked) return [...new Set([...current, ...selectableInvitationIds])];
+      return current.filter((id) => !visibleInvitationIds.has(id));
+    });
   }
 
   async function handleDeleteSelected() {
     try {
-      await onRemoveMembers(selectedUserIds);
+      await onRemoveMembers({ userIds: selectedUserIds, invitationIds: selectedInvitationIds });
       setSelectedUserIds([]);
+      setSelectedInvitationIds([]);
       setIsDeleteDialogOpen(false);
     } catch {
       return;
@@ -102,7 +123,7 @@ export function MembersPanel({
 
   return (
     <>
-      <Card className="border-border overflow-hidden p-0">
+      <Card className="border-border overflow-visible p-0">
         <div className="border-border flex items-center gap-3 border-b p-3">
           <label className="sr-only" htmlFor="member-search">
             Search members by name or email
@@ -160,31 +181,17 @@ export function MembersPanel({
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        {selectedUserIds.length > 0 && isAdmin && (
-          <div className="border-border bg-secondary/30 flex items-center justify-between gap-3 border-b px-5 py-3">
-            <span className="text-muted-foreground text-sm">{selectedUserIds.length} selected</span>
-            <Button
-              disabled={isRemovingMembers}
-              onClick={() => setIsDeleteDialogOpen(true)}
-              size="sm"
-              variant="destructive"
-            >
-              <Trash2 aria-hidden="true" className="size-4" />
-              Delete {selectedUserIds.length === 1 ? "member" : "members"}
-            </Button>
-          </div>
-        )}
         <div
           className={`border-border text-muted-foreground grid ${memberColumns} items-center gap-4 border-b px-5 py-3 text-[0.7rem] font-semibold tracking-wider`}
         >
           <span className="flex items-center gap-2">
             {isAdmin && (
               <Checkbox
-                aria-label="Select all active members except yourself"
+                aria-label="Select all non-admin members"
                 checked={
                   isAllVisibleSelected ? true : selectedVisibleCount > 0 ? "indeterminate" : false
                 }
-                disabled={selectableUserIds.length === 0 || isRemovingMembers}
+                disabled={selectableMembers.length === 0 || isRemovingMembers}
                 onCheckedChange={(checked) => toggleVisibleMembers(checked === true)}
               />
             )}
@@ -204,8 +211,11 @@ export function MembersPanel({
         ) : (
           members.map((member) => {
             const isSelectable =
-              isAdmin && member.status === "ACTIVE" && member.user.id !== currentUserId;
-            const isSelected = selectedUserIds.includes(member.user.id);
+              isAdmin && member.role !== "ADMIN" && member.user.id !== currentUserId;
+            const isSelected =
+              member.status === "INVITED"
+                ? selectedInvitationIds.includes(member.id)
+                : selectedUserIds.includes(member.user.id);
             const rowId = member.status === "ACTIVE" ? member.user.id : member.id;
 
             return (
@@ -220,7 +230,7 @@ export function MembersPanel({
                       aria-pressed={isSelected}
                       className="group relative size-10 overflow-hidden rounded-full bg-transparent p-0 hover:bg-transparent"
                       disabled={isRemovingMembers}
-                      onClick={() => toggleMember(member.user.id, !isSelected)}
+                      onClick={() => toggleMember(member, !isSelected)}
                       title={isSelected ? "Deselect member" : "Select member"}
                       type="button"
                       variant="ghost"
@@ -230,17 +240,13 @@ export function MembersPanel({
                       </span>
                       <span
                         aria-hidden="true"
-                        className={`absolute inset-0 grid place-items-center rounded-full bg-white/55 opacity-0 backdrop-blur-[1px] transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 ${
-                          isSelected ? "opacity-100" : ""
-                        }`}
+                        className={`absolute inset-0 grid place-items-center rounded-full border opacity-0 backdrop-blur-[1px] transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 ${isSelected ? "border-primary/80 bg-primary/45 text-foreground opacity-100" : "text-muted-foreground border-white/60 bg-white/35"}`}
                       >
-                        <span
-                          className={`border-border grid size-5 place-items-center rounded-[4px] border bg-white/65 shadow-sm ${
-                            isSelected ? "border-primary bg-primary text-primary-foreground" : ""
-                          }`}
-                        >
-                          {isSelected && <Check aria-hidden="true" className="size-3" />}
-                        </span>
+                        <Check
+                          aria-hidden="true"
+                          className={`size-7 ${isSelected ? "drop-shadow-sm" : "opacity-70"}`}
+                          strokeWidth={3}
+                        />
                       </span>
                     </Button>
                   ) : (
@@ -278,6 +284,20 @@ export function MembersPanel({
               : "Your team is taking shape. Invite a teammate to start collaborating here."}
           </p>
         )}
+        {selectedCount > 0 && isAdmin && (
+          <div className="border-border sticky bottom-0 z-10 flex items-center justify-between gap-3 rounded-b-xl border-t bg-white/85 px-5 py-3 shadow-[0_-8px_20px_rgba(23,24,54,0.08)] backdrop-blur-md">
+            <span className="text-muted-foreground text-sm">{selectedCount} selected</span>
+            <Button
+              disabled={isRemovingMembers}
+              onClick={() => setIsDeleteDialogOpen(true)}
+              size="sm"
+              variant="destructive"
+            >
+              <Trash2 aria-hidden="true" className="size-4" />
+              Delete {selectedCount === 1 ? "member" : "members"}
+            </Button>
+          </div>
+        )}
       </Card>
       <Dialog
         open={isDeleteDialogOpen}
@@ -288,11 +308,11 @@ export function MembersPanel({
         <DialogContent className="border-0">
           <DialogHeader>
             <DialogTitle className="text-xl font-semibold">
-              Delete {selectedUserIds.length === 1 ? "member" : `${selectedUserIds.length} members`}
-              ?
+              Delete {selectedCount === 1 ? "member" : `${selectedCount} members`}?
             </DialogTitle>
             <DialogDescription>
-              Selected members will lose access to this workspace. This action can’t be undone.
+              Selected members will lose access or have pending invitations canceled. This action
+              can’t be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -306,7 +326,7 @@ export function MembersPanel({
               Cancel
             </Button>
             <Button
-              disabled={isRemovingMembers || selectedUserIds.length === 0}
+              disabled={isRemovingMembers || selectedCount === 0}
               onClick={() => void handleDeleteSelected()}
               type="button"
               variant="destructive"

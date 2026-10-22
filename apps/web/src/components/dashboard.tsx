@@ -344,8 +344,11 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                 isAdmin={isAdmin}
                 currentUserId={user.id}
                 isRemovingMembers={removeMembersMutation.isPending}
-                onRemoveMembers={async (userIds) => {
-                  await removeMembersMutation.mutateAsync({ organizationId: activeId, userIds });
+                onRemoveMembers={async (selection) => {
+                  await removeMembersMutation.mutateAsync({
+                    organizationId: activeId,
+                    ...selection,
+                  });
                 }}
                 searchQuery={memberSearchQuery}
                 onSearchQueryChange={setMemberSearchQuery}

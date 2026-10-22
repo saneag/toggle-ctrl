@@ -6,6 +6,7 @@ import type {
   Organization,
   WorkspaceIcon,
 } from "../types.js";
+import type { RemoveMembersVariables } from "../utils/remove-members.types.js";
 
 export type SidebarProps = {
   user: CurrentUser;
@@ -25,7 +26,7 @@ export type MembersPanelProps = {
   isAdmin: boolean;
   currentUserId: string;
   isRemovingMembers: boolean;
-  onRemoveMembers: (userIds: string[]) => Promise<void>;
+  onRemoveMembers: (selection: Omit<RemoveMembersVariables, "organizationId">) => Promise<void>;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
   selectedRoles: MemberRole[];

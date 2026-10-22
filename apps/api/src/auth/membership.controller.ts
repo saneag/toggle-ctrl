@@ -42,7 +42,8 @@ export class MembershipController {
     return this.members.remove(
       user,
       readId(organizationId, "Organization ID"),
-      readIds(input.userIds, "Member ID"),
+      readIds(input.userIds ?? [], "Member ID"),
+      readIds(input.invitationIds ?? [], "Invitation ID"),
     );
   }
 
