@@ -2,8 +2,8 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 
 import { Link, useNavigate } from "react-router-dom";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpRight, Pencil, RefreshCw } from "lucide-react";
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { ArrowUpRight, Pencil, RefreshCw, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 
 import type {
@@ -44,6 +44,7 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
   const navigate = useNavigate();
   const activeId = organizationId;
   const [notice, setNotice] = useState("");
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [workspaceName, setWorkspaceName] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -83,7 +84,7 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
     return () => window.clearTimeout(timeout);
   }, [memberSearchQuery]);
 
-  const membersQuery = useQuery({
+  const membersQuery = useInfiniteQuery({
     queryKey: [
       "members",
       activeId,
@@ -91,15 +92,25 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
       selectedMemberRoles,
       selectedMemberStatuses,
     ],
-    queryFn: () =>
-      getMembers(activeId, {
-        search: debouncedMemberSearch,
-        roles: selectedMemberRoles,
-        statuses: selectedMemberStatuses,
-      }),
+    queryFn: ({ pageParam }) =>
+      getMembers(
+        activeId,
+        {
+          search: debouncedMemberSearch,
+          roles: selectedMemberRoles,
+          statuses: selectedMemberStatuses,
+        },
+        pageParam,
+      ),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.page + 1 : undefined),
     enabled: Boolean(activeId),
     retry: false,
   });
+  const members = membersQuery.data?.pages.flatMap((page) => page.members) ?? [];
+  async function loadNextMembers() {
+    await membersQuery.fetchNextPage();
+  }
   const invitationsQuery = useQuery({
     queryKey: ["invitations"],
     queryFn: getInvitations,
@@ -336,11 +347,20 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                     <RefreshCw ref={refreshIconRef} aria-hidden="true" className="size-4" />
                     Refresh
                   </Button>
+                  {isAdmin && (
+                    <Button onClick={() => setIsInviteDialogOpen(true)}>
+                      <UserPlus aria-hidden="true" className="size-4" />
+                      Invite member
+                    </Button>
+                  )}
                 </div>
               </div>
               <MembersPanel
-                members={membersQuery.data ?? []}
+                members={members}
                 isLoading={membersQuery.isPending}
+                hasMoreMembers={membersQuery.hasNextPage ?? false}
+                isLoadingMoreMembers={membersQuery.isFetchingNextPage}
+                onLoadMoreMembers={loadNextMembers}
                 isAdmin={isAdmin}
                 currentUserId={user.id}
                 isRemovingMembers={removeMembersMutation.isPending}
@@ -358,15 +378,19 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                 onSelectedStatusesChange={setSelectedMemberStatuses}
               />
               {isAdmin && (
-                <div className="mt-3">
-                  <InviteForm
-                    organizationId={organization.id}
-                    onInvited={(message) => {
-                      setNotice(message);
-                      void membersQuery.refetch();
-                    }}
-                  />
-                </div>
+                <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+                  <DialogContent className="border-0 p-0 sm:max-w-2xl">
+                    <InviteForm
+                      organizationId={organization.id}
+                      onCancel={() => setIsInviteDialogOpen(false)}
+                      onInvited={(message) => {
+                        setNotice(message);
+                        void membersQuery.refetch();
+                        setIsInviteDialogOpen(false);
+                      }}
+                    />
+                  </DialogContent>
+                </Dialog>
               )}
               {!isAdmin && (
                 <div className="border-border bg-card text-muted-foreground mt-5 rounded-md border p-4 text-sm">

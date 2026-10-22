@@ -23,6 +23,9 @@ export type WorkspaceColorStyle = { icon: string; swatch: string };
 export type MembersPanelProps = {
   members: Member[];
   isLoading: boolean;
+  hasMoreMembers: boolean;
+  isLoadingMoreMembers: boolean;
+  onLoadMoreMembers: () => Promise<void>;
   isAdmin: boolean;
   currentUserId: string;
   isRemovingMembers: boolean;

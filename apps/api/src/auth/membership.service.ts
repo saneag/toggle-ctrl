@@ -14,12 +14,18 @@ import {
   readMemberRole,
   readRequiredText,
 } from "./security.util.js";
-import type { MemberDirectoryFilters, MemberRole, MemberStatus } from "./types/member-directory.js";
+import type {
+  MemberDirectoryFilters,
+  MemberDirectoryPage,
+  MemberRole,
+  MemberStatus,
+} from "./types/member-directory.js";
 import type { RemoveMembersResponse } from "./types/remove-members.js";
 import type { AddMemberInput } from "./types/request-payloads.js";
 import type { SessionUser } from "./types/session-user.js";
 
 const setupTokenTtlMs = 1000 * 60 * 60 * 24;
+const memberPageSize = 50;
 
 @Injectable()
 export class MembershipService {
@@ -28,8 +34,15 @@ export class MembershipService {
     private readonly email: EmailService,
   ) {}
 
-  async list(actor: SessionUser, organizationId: string, filters: MemberDirectoryFilters) {
+  async list(
+    actor: SessionUser,
+    organizationId: string,
+    filters: MemberDirectoryFilters,
+  ): Promise<MemberDirectoryPage> {
     await this.requireMembership(actor.id, organizationId);
+    if (!Number.isSafeInteger(filters.page) || filters.page < 1 || filters.page > 10_000) {
+      throw new BadRequestException("Member page must be between 1 and 10,000");
+    }
     const search = filters.search.trim();
     if (search.length > 120)
       throw new BadRequestException("Member search must be 120 characters or fewer");
@@ -59,12 +72,15 @@ export class MembershipService {
           },
         }
       : {};
+    const offset = (filters.page - 1) * memberPageSize;
+    const candidateCount = offset + memberPageSize + 1;
     const [memberships, invitations] = await Promise.all([
       includeActive
         ? this.prisma.membership.findMany({
             where: { organizationId, ...(roleFilter ? { role: roleFilter } : {}), ...searchFilter },
             include: { user: { select: { id: true, email: true, name: true } } },
-            orderBy: { createdAt: "asc" },
+            orderBy: [{ user: { name: "asc" } }, { userId: "asc" }],
+            take: candidateCount,
           })
         : Promise.resolve([]),
       includeInvited
@@ -77,18 +93,34 @@ export class MembershipService {
               ...(search ? { email: { contains: search, mode: "insensitive" as const } } : {}),
             },
             select: { id: true, email: true, role: true, createdAt: true },
+            orderBy: [{ email: "asc" }, { id: "asc" }],
+            take: candidateCount,
           })
         : Promise.resolve([]),
     ]);
-    return [
-      ...memberships.map((membership) => ({ ...membership, status: "ACTIVE" as const })),
+    const sortedMembers = [
+      ...memberships.map((membership) => ({
+        id: membership.userId,
+        role: membership.role,
+        status: "ACTIVE" as const,
+        user: membership.user,
+      })),
       ...invitations.map((invitation) => ({
         id: invitation.id,
         role: invitation.role,
         status: "INVITED" as const,
         user: { id: invitation.id, email: invitation.email, name: invitation.email },
       })),
-    ].sort((left, right) => left.user.name.localeCompare(right.user.name));
+    ].sort(
+      (left, right) =>
+        left.user.name.localeCompare(right.user.name) || left.user.id.localeCompare(right.user.id),
+    );
+    const membersPage = sortedMembers.slice(offset, offset + memberPageSize + 1);
+    return {
+      members: membersPage.slice(0, memberPageSize),
+      page: filters.page,
+      hasMore: membersPage.length > memberPageSize,
+    };
   }
 
   async remove(

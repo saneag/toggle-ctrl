@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Check, Filter, LoaderCircle, Search, Trash2 } from "lucide-react";
 
@@ -36,6 +36,9 @@ const initials = (name: string) =>
 export function MembersPanel({
   members,
   isLoading,
+  hasMoreMembers,
+  isLoadingMoreMembers,
+  onLoadMoreMembers,
   isAdmin,
   currentUserId,
   isRemovingMembers,
@@ -47,6 +50,7 @@ export function MembersPanel({
   selectedStatuses,
   onSelectedStatusesChange,
 }: MembersPanelProps) {
+  const isLoadingMoreRef = useRef(false);
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [selectedInvitationIds, setSelectedInvitationIds] = useState<string[]>([]);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -67,6 +71,16 @@ export function MembersPanel({
   const isAllVisibleSelected =
     selectableMembers.length > 0 && selectedVisibleCount === selectableMembers.length;
   const memberColumns = "grid-cols-[minmax(0,1fr)_7rem_6rem]";
+
+  async function loadMoreMembers() {
+    if (!hasMoreMembers || isLoadingMoreMembers || isLoadingMoreRef.current) return;
+    isLoadingMoreRef.current = true;
+    try {
+      await onLoadMoreMembers();
+    } finally {
+      isLoadingMoreRef.current = false;
+    }
+  }
 
   function toggleMember(member: (typeof members)[number], checked: boolean) {
     if (member.status === "INVITED") {
@@ -182,122 +196,141 @@ export function MembersPanel({
           </DropdownMenu>
         </div>
         <div
-          className={`border-border text-muted-foreground grid ${memberColumns} items-center gap-4 border-b px-5 py-3 text-[0.7rem] font-semibold tracking-wider`}
+          className="h-[28rem] overflow-y-auto overscroll-contain"
+          onScroll={(event) => {
+            const element = event.currentTarget;
+            if (element.scrollHeight - element.scrollTop - element.clientHeight < 160) {
+              void loadMoreMembers();
+            }
+          }}
         >
-          <span className="flex items-center gap-2">
-            {isAdmin && (
-              <Checkbox
-                aria-label="Select all non-admin members"
-                checked={
-                  isAllVisibleSelected ? true : selectedVisibleCount > 0 ? "indeterminate" : false
-                }
-                disabled={selectableMembers.length === 0 || isRemovingMembers}
-                onCheckedChange={(checked) => toggleVisibleMembers(checked === true)}
-              />
-            )}
-            MEMBER
-          </span>
-          <span>ROLE</span>
-          <span>STATUS</span>
-        </div>
-        {isLoading ? (
           <div
-            className="text-muted-foreground flex items-center justify-center gap-2 px-5 py-8 text-sm"
-            role="status"
+            className={`border-border text-muted-foreground bg-card sticky top-0 z-10 grid ${memberColumns} items-center gap-4 border-b px-5 py-3 text-[0.7rem] font-semibold tracking-wider`}
           >
-            <LoaderCircle aria-hidden="true" className="text-primary size-4 animate-spin" />
-            Loading members…
+            <span className="flex items-center gap-2">
+              {isAdmin && (
+                <Checkbox
+                  aria-label="Select all loaded non-admin members"
+                  checked={
+                    isAllVisibleSelected ? true : selectedVisibleCount > 0 ? "indeterminate" : false
+                  }
+                  disabled={selectableMembers.length === 0 || isRemovingMembers}
+                  onCheckedChange={(checked) => toggleVisibleMembers(checked === true)}
+                />
+              )}
+              MEMBER
+            </span>
+            <span>ROLE</span>
+            <span>STATUS</span>
           </div>
-        ) : (
-          members.map((member) => {
-            const isSelectable =
-              isAdmin && member.role !== "ADMIN" && member.user.id !== currentUserId;
-            const isSelected =
-              member.status === "INVITED"
-                ? selectedInvitationIds.includes(member.id)
-                : selectedUserIds.includes(member.user.id);
-            const rowId = member.status === "ACTIVE" ? member.user.id : member.id;
+          {isLoading ? (
+            <div
+              className="text-muted-foreground flex items-center justify-center gap-2 px-5 py-8 text-sm"
+              role="status"
+            >
+              <LoaderCircle aria-hidden="true" className="text-primary size-4 animate-spin" />
+              Loading members…
+            </div>
+          ) : (
+            members.map((member) => {
+              const isSelectable =
+                isAdmin && member.role !== "ADMIN" && member.user.id !== currentUserId;
+              const isSelected =
+                member.status === "INVITED"
+                  ? selectedInvitationIds.includes(member.id)
+                  : selectedUserIds.includes(member.user.id);
+              const rowId = member.status === "ACTIVE" ? member.user.id : member.id;
 
-            return (
-              <div
-                className={`border-border grid ${memberColumns} items-center gap-4 border-b px-5 py-4 last:border-0 ${isSelected ? "bg-secondary/50" : ""}`}
-                key={rowId}
-              >
-                <div className="flex min-w-0 items-center gap-3">
-                  {isSelectable ? (
-                    <Button
-                      aria-label={`${isSelected ? "Deselect" : "Select"} ${member.user.name}`}
-                      aria-pressed={isSelected}
-                      className="group relative size-10 overflow-hidden rounded-full bg-transparent p-0 hover:bg-transparent"
-                      disabled={isRemovingMembers}
-                      onClick={() => toggleMember(member, !isSelected)}
-                      title={isSelected ? "Deselect member" : "Select member"}
-                      type="button"
-                      variant="ghost"
-                    >
+              return (
+                <div
+                  className={`border-border grid ${memberColumns} items-center gap-4 border-b px-5 py-4 last:border-0 ${isSelected ? "bg-secondary/50" : ""}`}
+                  key={rowId}
+                >
+                  <div className="flex min-w-0 items-center gap-3">
+                    {isSelectable ? (
+                      <Button
+                        aria-label={`${isSelected ? "Deselect" : "Select"} ${member.user.name}`}
+                        aria-pressed={isSelected}
+                        className="group relative size-10 overflow-hidden rounded-full bg-transparent p-0 hover:bg-transparent"
+                        disabled={isRemovingMembers}
+                        onClick={() => toggleMember(member, !isSelected)}
+                        title={isSelected ? "Deselect member" : "Select member"}
+                        type="button"
+                        variant="ghost"
+                      >
+                        <span className="bg-secondary text-foreground flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
+                          {initials(member.user.name)}
+                        </span>
+                        <span
+                          aria-hidden="true"
+                          className={`absolute inset-0 grid place-items-center rounded-full border opacity-0 backdrop-blur-[1px] transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 ${isSelected ? "border-primary/80 bg-primary/45 text-foreground opacity-100" : "text-muted-foreground border-white/60 bg-white/35"}`}
+                        >
+                          <Check
+                            aria-hidden="true"
+                            className={`size-7 ${isSelected ? "drop-shadow-sm" : "opacity-70"}`}
+                            strokeWidth={3}
+                          />
+                        </span>
+                      </Button>
+                    ) : (
                       <span className="bg-secondary text-foreground flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
                         {initials(member.user.name)}
                       </span>
-                      <span
-                        aria-hidden="true"
-                        className={`absolute inset-0 grid place-items-center rounded-full border opacity-0 backdrop-blur-[1px] transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 ${isSelected ? "border-primary/80 bg-primary/45 text-foreground opacity-100" : "text-muted-foreground border-white/60 bg-white/35"}`}
-                      >
-                        <Check
-                          aria-hidden="true"
-                          className={`size-7 ${isSelected ? "drop-shadow-sm" : "opacity-70"}`}
-                          strokeWidth={3}
-                        />
+                    )}
+                    <span>
+                      <span className="text-foreground block truncate text-sm font-medium">
+                        {member.user.name}
                       </span>
-                    </Button>
-                  ) : (
-                    <span className="bg-secondary text-foreground flex size-10 shrink-0 items-center justify-center rounded-full text-sm font-semibold">
-                      {initials(member.user.name)}
+                      <span className="text-muted-foreground block truncate text-xs">
+                        {member.user.email}
+                      </span>
                     </span>
-                  )}
-                  <span>
-                    <span className="text-foreground block truncate text-sm font-medium">
-                      {member.user.name}
-                    </span>
-                    <span className="text-muted-foreground block truncate text-xs">
-                      {member.user.email}
-                    </span>
+                  </div>
+                  <span className="text-foreground flex items-center gap-2 text-sm">
+                    <i className="bg-primary size-2 rounded-full" />
+                    {member.role.charAt(0) + member.role.slice(1).toLowerCase()}
+                  </span>
+                  <span className="text-muted-foreground flex items-center gap-2 text-sm">
+                    <i
+                      className={`${member.status === "ACTIVE" ? "bg-primary" : "bg-amber-500"} size-2 rounded-full`}
+                    />
+                    {member.status === "ACTIVE" ? "Active" : "Invited"}
                   </span>
                 </div>
-                <span className="text-foreground flex items-center gap-2 text-sm">
-                  <i className="bg-primary size-2 rounded-full" />
-                  {member.role.charAt(0) + member.role.slice(1).toLowerCase()}
-                </span>
-                <span className="text-muted-foreground flex items-center gap-2 text-sm">
-                  <i
-                    className={`${member.status === "ACTIVE" ? "bg-primary" : "bg-amber-500"} size-2 rounded-full`}
-                  />
-                  {member.status === "ACTIVE" ? "Active" : "Invited"}
-                </span>
-              </div>
-            );
-          })
-        )}
-        {!isLoading && members.length === 0 && (
-          <p className="text-muted-foreground px-5 py-8 text-center text-sm" role="status">
-            {searchQuery.trim() || activeFilterCount > 0
-              ? "No members or invitations match your search and filters."
-              : "Your team is taking shape. Invite a teammate to start collaborating here."}
-          </p>
-        )}
-        {selectedCount > 0 && isAdmin && (
-          <div className="border-border sticky bottom-0 z-10 flex items-center justify-between gap-3 rounded-b-xl border-t bg-white/85 px-5 py-3 shadow-[0_-8px_20px_rgba(23,24,54,0.08)] backdrop-blur-md">
-            <span className="text-muted-foreground text-sm">{selectedCount} selected</span>
-            <Button
-              disabled={isRemovingMembers}
-              onClick={() => setIsDeleteDialogOpen(true)}
-              size="sm"
-              variant="destructive"
+              );
+            })
+          )}
+          {!isLoading && members.length === 0 && (
+            <p className="text-muted-foreground px-5 py-8 text-center text-sm" role="status">
+              {searchQuery.trim() || activeFilterCount > 0
+                ? "No members or invitations match your search and filters."
+                : "Your team is taking shape. Invite a teammate to start collaborating here."}
+            </p>
+          )}
+          {isLoadingMoreMembers && (
+            <div
+              className="text-muted-foreground flex items-center justify-center gap-2 px-5 py-4 text-sm"
+              role="status"
             >
-              <Trash2 aria-hidden="true" className="size-4" />
-              Delete {selectedCount === 1 ? "member" : "members"}
-            </Button>
-          </div>
-        )}
+              <LoaderCircle aria-hidden="true" className="text-primary size-4 animate-spin" />
+              Loading more members…
+            </div>
+          )}
+          {selectedCount > 0 && isAdmin && (
+            <div className="border-border sticky bottom-0 z-10 flex items-center justify-between gap-3 rounded-b-xl border-t bg-white/85 px-5 py-3 shadow-[0_-8px_20px_rgba(23,24,54,0.08)] backdrop-blur-md">
+              <span className="text-muted-foreground text-sm">{selectedCount} selected</span>
+              <Button
+                disabled={isRemovingMembers}
+                onClick={() => setIsDeleteDialogOpen(true)}
+                size="sm"
+                variant="destructive"
+              >
+                <Trash2 aria-hidden="true" className="size-4" />
+                Delete {selectedCount === 1 ? "member" : "members"}
+              </Button>
+            </div>
+          )}
+        </div>
       </Card>
       <Dialog
         open={isDeleteDialogOpen}

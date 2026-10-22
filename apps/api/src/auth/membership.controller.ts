@@ -20,12 +20,14 @@ export class MembershipController {
     @Query("search") search = "",
     @Query("roles") roles = "",
     @Query("statuses") statuses = "",
+    @Query("page") page = "1",
   ) {
     const user = await this.sessions.authenticate(readSessionCookie(request));
     return this.members.list(user, readId(organizationId, "Organization ID"), {
       search,
       roles,
       statuses,
+      page: Number(page),
     });
   }
 

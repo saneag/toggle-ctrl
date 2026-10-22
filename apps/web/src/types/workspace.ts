@@ -54,6 +54,11 @@ export type MemberDirectoryQuery = {
   roles: MemberRole[];
   statuses: MemberStatus[];
 };
+export type MemberDirectoryPage = {
+  members: Member[];
+  page: number;
+  hasMore: boolean;
+};
 export type Member = {
   id: string;
   role: string;
