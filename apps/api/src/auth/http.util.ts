@@ -23,6 +23,13 @@ export function readId(value: unknown, label: string): string {
   return value;
 }
 
+export function readIds(value: unknown, label: string): string[] {
+  if (!Array.isArray(value) || value.length === 0) {
+    throw new BadRequestException(`${label}s must be a non-empty array`);
+  }
+  return [...new Set(value.map((item) => readId(item, label)))];
+}
+
 export function readSessionCookie(request: Request): string | undefined {
   const header = request.headers.cookie;
   if (!header) return undefined;

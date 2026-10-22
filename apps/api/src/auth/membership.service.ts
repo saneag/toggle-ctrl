@@ -15,6 +15,7 @@ import {
   readRequiredText,
 } from "./security.util.js";
 import type { MemberDirectoryFilters, MemberRole, MemberStatus } from "./types/member-directory.js";
+import type { RemoveMembersResponse } from "./types/remove-members.js";
 import type { AddMemberInput } from "./types/request-payloads.js";
 import type { SessionUser } from "./types/session-user.js";
 
@@ -88,6 +89,39 @@ export class MembershipService {
         user: { id: invitation.id, email: invitation.email, name: invitation.email },
       })),
     ].sort((left, right) => left.user.name.localeCompare(right.user.name));
+  }
+
+  async remove(
+    actor: SessionUser,
+    organizationId: string,
+    userIds: string[],
+  ): Promise<RemoveMembersResponse> {
+    await this.requireAdmin(actor.id, organizationId);
+    if (userIds.includes(actor.id)) {
+      throw new BadRequestException("You cannot remove yourself from this workspace");
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const memberships = await tx.membership.findMany({
+        where: { organizationId, userId: { in: userIds } },
+        select: { userId: true },
+      });
+      if (memberships.length !== userIds.length) {
+        throw new NotFoundException("One or more selected members were not found");
+      }
+
+      const remainingAdmins = await tx.membership.count({
+        where: { organizationId, role: "ADMIN", userId: { notIn: userIds } },
+      });
+      if (remainingAdmins === 0) {
+        throw new BadRequestException("A workspace must have at least one admin");
+      }
+
+      const result = await tx.membership.deleteMany({
+        where: { organizationId, userId: { in: userIds } },
+      });
+      return { deletedCount: result.count };
+    });
   }
 
   private parseFilters<T extends string>(value: string, allowed: readonly T[], label: string): T[] {

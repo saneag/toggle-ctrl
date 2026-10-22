@@ -19,6 +19,7 @@ import { getInvitations } from "../utils/get-invitations.js";
 import { getMembers } from "../utils/get-members.js";
 import { getOrganizationSummary } from "../utils/get-organization-summary.js";
 import { getOrganization } from "../utils/get-organization.js";
+import { removeMembers } from "../utils/remove-members.js";
 import { signOut } from "../utils/sign-out.js";
 import { updateOrganization } from "../utils/update-organization.js";
 import { AppPage } from "./app-page.js";
@@ -150,6 +151,18 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
       setNotice("Invitation accepted. Switch to the new workspace in the sidebar.");
     },
     onError: (error) => setNotice(error.message),
+  });
+  const removeMembersMutation = useMutation({
+    mutationFn: removeMembers,
+    onSuccess: async ({ deletedCount }) => {
+      await queryClient.invalidateQueries({ queryKey: ["members", activeId] });
+      toast.success(
+        deletedCount === 1
+          ? "Member removed from the workspace."
+          : `${deletedCount} members removed from the workspace.`,
+      );
+    },
+    onError: (error) => toast.error(error.message),
   });
   const signOutMutation = useMutation({
     mutationFn: signOut,
@@ -328,6 +341,12 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
               <MembersPanel
                 members={membersQuery.data ?? []}
                 isLoading={membersQuery.isPending}
+                isAdmin={isAdmin}
+                currentUserId={user.id}
+                isRemovingMembers={removeMembersMutation.isPending}
+                onRemoveMembers={async (userIds) => {
+                  await removeMembersMutation.mutateAsync({ organizationId: activeId, userIds });
+                }}
                 searchQuery={memberSearchQuery}
                 onSearchQueryChange={setMemberSearchQuery}
                 selectedRoles={selectedMemberRoles}

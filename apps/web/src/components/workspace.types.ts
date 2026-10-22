@@ -22,6 +22,10 @@ export type WorkspaceColorStyle = { icon: string; swatch: string };
 export type MembersPanelProps = {
   members: Member[];
   isLoading: boolean;
+  isAdmin: boolean;
+  currentUserId: string;
+  isRemovingMembers: boolean;
+  onRemoveMembers: (userIds: string[]) => Promise<void>;
   searchQuery: string;
   onSearchQueryChange: (query: string) => void;
   selectedRoles: MemberRole[];

@@ -9,13 +9,13 @@ export function AuthScreen({ children }: AuthScreenProps) {
   const initialTab = new URLSearchParams(window.location.search).has("invite") ? "signup" : "login";
   return (
     <main className="grid min-h-svh md:grid-cols-2">
-      <section className="bg-background flex min-h-[36svh] flex-col justify-center px-6 py-10 text-white sm:px-12 md:min-h-svh lg:px-20">
+      <section className="bg-secondary text-foreground flex min-h-[36svh] flex-col justify-center px-6 py-10 sm:px-12 md:min-h-svh lg:px-20">
         <BrandMark variant="horizontal" />
         <div className="mt-10 max-w-lg sm:mt-16">
           <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-[0.16em]">
             FEATURE MANAGEMENT
           </p>
-          <h1 className="text-4xl leading-tight font-bold tracking-tight text-white sm:text-5xl">
+          <h1 className="text-foreground text-4xl leading-tight font-bold tracking-tight sm:text-5xl">
             {children ? "Set up your account." : "Control every release."}
           </h1>
           <p className="text-muted-foreground mt-5 max-w-md text-base leading-relaxed">
