@@ -58,7 +58,7 @@ import { Input } from "./ui/input.js";
 import { workspaceColorStyles, workspaceIcons } from "./workspace-appearance.js";
 import type { DashboardProps } from "./workspace.types.js";
 
-export function Dashboard({ user, organizationId = "" }: DashboardProps) {
+export function Dashboard({ user, organizationId = "", section }: DashboardProps) {
   const navigate = useNavigate();
   const activeId = organizationId;
   const [notice, setNotice] = useState("");
@@ -68,9 +68,6 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [workspaceName, setWorkspaceName] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [activeWorkspaceSection, setActiveWorkspaceSection] = useState<
-    "members" | "toggles" | null
-  >(null);
   const [settingsName, setSettingsName] = useState("");
   const [settingsIcon, setSettingsIcon] = useState<WorkspaceIcon>("flag");
   const [settingsColor, setSettingsColor] = useState<WorkspaceColor>("teal");
@@ -83,10 +80,6 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
   const [selectedMemberStatuses, setSelectedMemberStatuses] = useState<MemberStatus[]>([]);
   const refreshIconRef = useRef<SVGSVGElement>(null);
   const queryClient = useQueryClient();
-  useEffect(() => {
-    setActiveWorkspaceSection(null);
-  }, [activeId]);
-
   const organizationQuery = useQuery({
     queryKey: ["organization", activeId],
     queryFn: () => getOrganization(activeId),
@@ -289,7 +282,7 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
           </div>
         </header>
         <section className="mx-auto w-full max-w-5xl p-5 sm:p-8">
-          {activeWorkspaceSection === null && (
+          {section === null && (
             <div className="mb-9">
               <div>
                 <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider">
@@ -394,11 +387,11 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
           )}
           {organization ? (
             <>
-              {activeWorkspaceSection === null ? (
+              {section === null ? (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <button
                     className="border-border bg-card hover:bg-accent/50 focus-visible:ring-ring rounded-xl border p-6 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
-                    onClick={() => setActiveWorkspaceSection("members")}
+                    onClick={() => navigate(`/workspaces/${activeId}/members`)}
                     type="button"
                   >
                     <Users aria-hidden="true" className="text-primary mb-5 size-6" />
@@ -409,7 +402,7 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                   </button>
                   <button
                     className="border-border bg-card hover:bg-accent/50 focus-visible:ring-ring rounded-xl border p-6 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
-                    onClick={() => setActiveWorkspaceSection("toggles")}
+                    onClick={() => navigate(`/workspaces/${activeId}/feature-toggles`)}
                     type="button"
                   >
                     <ToggleLeft aria-hidden="true" className="text-primary mb-5 size-6" />
@@ -426,7 +419,7 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                       <Button
                         aria-label="Back to workspace sections"
                         className="border-border bg-card text-foreground hover:bg-accent"
-                        onClick={() => setActiveWorkspaceSection(null)}
+                        onClick={() => navigate(`/workspaces/${activeId}`)}
                         size="icon-sm"
                         variant="outline"
                       >
@@ -434,16 +427,16 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                       </Button>
                       <div>
                         <h2 className="font-semibold">
-                          {activeWorkspaceSection === "members" ? "Members" : "Feature toggles"}
+                          {section === "members" ? "Members" : "Feature toggles"}
                         </h2>
                         <p className="text-muted-foreground mt-1 text-sm">
-                          {activeWorkspaceSection === "members"
+                          {section === "members"
                             ? "People who can access this workspace."
                             : "Feature toggles for this workspace."}
                         </p>
                       </div>
                     </div>
-                    {activeWorkspaceSection === "members" && (
+                    {section === "members" && (
                       <div className="flex items-center gap-2 sm:gap-3">
                         <Button
                           className="border-border bg-card text-foreground hover:bg-accent"
@@ -469,7 +462,7 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                       </div>
                     )}
                   </div>
-                  {activeWorkspaceSection === "members" ? (
+                  {section === "members" ? (
                     <MembersPanel
                       members={members}
                       isLoading={membersQuery.isPending}
@@ -512,7 +505,7 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                   </DialogContent>
                 </Dialog>
               )}
-              {activeWorkspaceSection === "members" && !isAdmin && (
+              {section === "members" && !isAdmin && (
                 <div className="border-border bg-card text-muted-foreground mt-5 rounded-md border p-4 text-sm">
                   You have {organization.role.toLowerCase()} access in this workspace. Contact an
                   admin to invite new members.

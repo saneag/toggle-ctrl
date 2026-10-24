@@ -84,7 +84,7 @@ export function App() {
     <Routes>
       <Route path="/" element={user ? <WorkspaceHome user={user} /> : <AuthScreen />} />
       <Route
-        path="/workspaces/:organizationId"
+        path="/workspaces/:organizationId/:section?"
         element={user ? <WorkspaceRoute user={user} /> : <AuthScreen />}
       />
       <Route path="/help" element={user ? <HelpCenter user={user} /> : <AuthScreen />} />
@@ -111,9 +111,18 @@ export function App() {
 }
 
 function WorkspaceRoute({ user }: WorkspaceRouteProps) {
-  const { organizationId } = useParams();
+  const { organizationId, section } = useParams();
   if (!organizationId) {
     return <Navigate to="/" replace />;
   }
-  return <Dashboard user={user} organizationId={organizationId} />;
+  if (section && section !== "members" && section !== "feature-toggles") {
+    return <Navigate to={`/workspaces/${organizationId}`} replace />;
+  }
+  return (
+    <Dashboard
+      user={user}
+      organizationId={organizationId}
+      section={section === "members" || section === "feature-toggles" ? section : null}
+    />
+  );
 }
