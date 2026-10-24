@@ -20,6 +20,7 @@ model FeatureToggle {
   events         FeatureToggleAuditEvent[]
 
   @@index([organizationId, archivedAt, updatedAt])
+  @@index([archivedAt])
 }
 
 model FeatureToggleAuditEvent {

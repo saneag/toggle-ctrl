@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Headers, Param, Patch, Post, Req } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Headers,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+} from "@nestjs/common";
 
 import type { Request } from "express";
 
@@ -14,9 +25,19 @@ export class FeatureToggleController {
   ) {}
 
   @Get()
-  async list(@Req() request: Request, @Param("organizationId") organizationId: string) {
+  async list(
+    @Req() request: Request,
+    @Param("organizationId") organizationId: string,
+    @Query("page") page?: string,
+  ) {
     const user = await this.sessions.authenticate(readSessionCookie(request));
-    return this.toggles.list(user.id, organizationId);
+    return this.toggles.list(user.id, organizationId, page === undefined ? 1 : Number(page));
+  }
+
+  @Get("deleted")
+  async listDeleted(@Req() request: Request, @Param("organizationId") organizationId: string) {
+    const user = await this.sessions.authenticate(readSessionCookie(request));
+    return this.toggles.listDeleted(user.id, organizationId);
   }
 
   @Post()
@@ -45,7 +66,7 @@ export class FeatureToggleController {
   }
 
   @Delete(":toggleId")
-  async archive(
+  async delete(
     @Req() request: Request,
     @Headers("x-csrf-token") csrf: string,
     @Param("organizationId") organizationId: string,
@@ -53,7 +74,19 @@ export class FeatureToggleController {
   ) {
     const user = await this.sessions.authenticate(readSessionCookie(request));
     await this.sessions.validateCsrf(user.sessionId, csrf);
-    return this.toggles.archive(user, organizationId, toggleId);
+    return this.toggles.delete(user, organizationId, toggleId);
+  }
+
+  @Post(":toggleId/restore")
+  async restore(
+    @Req() request: Request,
+    @Headers("x-csrf-token") csrf: string,
+    @Param("organizationId") organizationId: string,
+    @Param("toggleId") toggleId: string,
+  ) {
+    const user = await this.sessions.authenticate(readSessionCookie(request));
+    await this.sessions.validateCsrf(user.sessionId, csrf);
+    return this.toggles.restore(user, organizationId, toggleId);
   }
 
   @Get(":toggleId/history")

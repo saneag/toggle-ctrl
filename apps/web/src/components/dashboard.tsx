@@ -6,6 +6,7 @@ import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tansta
 import {
   ArrowLeft,
   ArrowUpRight,
+  LoaderCircle,
   MoreHorizontal,
   Pencil,
   RefreshCw,
@@ -433,7 +434,15 @@ export function Dashboard({ user, organizationId = "", section }: DashboardProps
               </div>
             </section>
           )}
-          {organization ? (
+          {organizationQuery.isPending ? (
+            <div
+              className="border-border bg-card text-muted-foreground mt-5 flex items-center gap-3 rounded-lg border p-6 text-sm"
+              role="status"
+            >
+              <LoaderCircle aria-hidden="true" className="text-primary size-4 animate-spin" />
+              Loading workspace…
+            </div>
+          ) : organization ? (
             <>
               {section === null ? (
                 <div className="grid gap-4 sm:grid-cols-2">

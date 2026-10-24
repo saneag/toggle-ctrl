@@ -1,7 +1,9 @@
 import type {
+  DeletedFeatureToggle,
   FeatureToggle,
   FeatureToggleAuditEvent,
   FeatureToggleInput,
+  FeatureTogglePage,
   FeatureToggleSdkKey,
 } from "../types.js";
 import { apiRequest } from "./api-request.js";
@@ -9,8 +11,15 @@ import { getCsrfToken } from "./get-csrf-token.js";
 
 const togglePath = (organizationId: string) => `/organizations/${organizationId}/feature-toggles`;
 
-export function getFeatureToggles(organizationId: string): Promise<FeatureToggle[]> {
-  return apiRequest(togglePath(organizationId));
+export function getFeatureToggles(
+  organizationId: string,
+  page: number,
+): Promise<FeatureTogglePage> {
+  return apiRequest(`${togglePath(organizationId)}?page=${page}`);
+}
+
+export function getDeletedFeatureToggles(organizationId: string): Promise<DeletedFeatureToggle[]> {
+  return apiRequest(`${togglePath(organizationId)}/deleted`);
 }
 
 export function getFeatureToggleHistory(
@@ -45,13 +54,21 @@ export async function updateFeatureToggle(
   });
 }
 
-export async function archiveFeatureToggle(
-  organizationId: string,
-  toggleId: string,
-): Promise<void> {
+export async function deleteFeatureToggle(organizationId: string, toggleId: string): Promise<void> {
   const csrfToken = await getCsrfToken();
   await apiRequest(`${togglePath(organizationId)}/${toggleId}`, {
     method: "DELETE",
+    headers: { "X-CSRF-Token": csrfToken },
+  });
+}
+
+export async function restoreFeatureToggle(
+  organizationId: string,
+  toggleId: string,
+): Promise<FeatureToggle> {
+  const csrfToken = await getCsrfToken();
+  return apiRequest(`${togglePath(organizationId)}/${toggleId}/restore`, {
+    method: "POST",
     headers: { "X-CSRF-Token": csrfToken },
   });
 }

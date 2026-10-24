@@ -3,6 +3,7 @@ import { Module } from "@nestjs/common";
 import { AuthController } from "./auth.controller.js";
 import { AuthService } from "./auth.service.js";
 import { EmailService } from "./email.service.js";
+import { FeatureToggleRetentionService } from "./feature-toggle-retention.service.js";
 import {
   FeatureToggleController,
   FeatureToggleSdkKeyController,
@@ -35,6 +36,7 @@ import { SessionService } from "./session.service.js";
     InvitationService,
     EmailService,
     FeatureToggleService,
+    FeatureToggleRetentionService,
   ],
 })
 export class AuthModule {}

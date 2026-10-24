@@ -45,6 +45,7 @@ function makeService(role = "ADMIN") {
     },
     $transaction: vi.fn((callback: (tx: typeof transaction) => unknown) => callback(transaction)),
     featureToggle: {
+      count: vi.fn().mockResolvedValue(0),
       findMany: vi.fn().mockResolvedValue([]),
     },
     featureToggleSdkKey: {
@@ -115,7 +116,7 @@ describe("FeatureToggleService", () => {
     ).rejects.toBeInstanceOf(ForbiddenException);
   });
 
-  it("filters archived toggles from workspace lists", async () => {
+  it("filters deleted toggles from workspace lists", async () => {
     const { service, prisma } = makeService();
 
     await service.list(user.id, "workspace-1");

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   HttpException,
@@ -13,26 +14,58 @@ import { randomBytes, timingSafeEqual } from "node:crypto";
 import { Prisma } from "../generated/prisma/client.js";
 import { PrismaService } from "../prisma/prisma.service.js";
 import type {
+  DeletedFeatureToggleView,
   FeatureToggleAuditView,
   FeatureToggleInput,
+  FeatureTogglePageView,
   FeatureToggleState,
   FeatureToggleView,
 } from "./types/feature-toggle.types.js";
 import type { SessionUser } from "./types/session-user.js";
 
 const namePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+export const featureToggleRetentionMs = 7 * 24 * 60 * 60 * 1000;
+const featureTogglePageSize = 50;
 
 @Injectable()
 export class FeatureToggleService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async list(userId: string, organizationId: string): Promise<FeatureToggleView[]> {
+  async list(userId: string, organizationId: string, page = 1): Promise<FeatureTogglePageView> {
     await this.requireMembership(userId, organizationId);
+    if (!Number.isSafeInteger(page) || page < 1 || page > 10_000) {
+      throw new BadRequestException("Feature toggle page must be between 1 and 10,000");
+    }
+    const where = { organizationId, archivedAt: null };
+    const [total, toggles] = await Promise.all([
+      this.prisma.featureToggle.count({ where }),
+      this.prisma.featureToggle.findMany({
+        where,
+        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+        skip: (page - 1) * featureTogglePageSize,
+        take: featureTogglePageSize + 1,
+      }),
+    ]);
+    return {
+      toggles: toggles.slice(0, featureTogglePageSize).map((toggle) => this.toView(toggle)),
+      page,
+      total,
+      hasMore: toggles.length > featureTogglePageSize,
+    };
+  }
+
+  async listDeleted(userId: string, organizationId: string): Promise<DeletedFeatureToggleView[]> {
+    await this.requireMembership(userId, organizationId);
+    const retentionCutoff = new Date(Date.now() - featureToggleRetentionMs);
     const toggles = await this.prisma.featureToggle.findMany({
-      where: { organizationId, archivedAt: null },
-      orderBy: [{ updatedAt: "desc" }, { name: "asc" }],
+      where: { organizationId, archivedAt: { gt: retentionCutoff } },
+      orderBy: [{ archivedAt: "desc" }, { name: "asc" }],
     });
-    return toggles.map((toggle) => this.toView(toggle));
+    return toggles.map((toggle) => ({
+      ...this.toView(toggle),
+      deletedAt: toggle.archivedAt!,
+      deletedBy: toggle.archivedByName ?? "Unknown",
+    }));
   }
 
   async create(user: SessionUser, organizationId: string, input: FeatureToggleInput) {
@@ -109,7 +142,7 @@ export class FeatureToggleService {
     }
   }
 
-  async archive(user: SessionUser, organizationId: string, toggleId: string) {
+  async delete(user: SessionUser, organizationId: string, toggleId: string) {
     await this.requireManager(user.id, organizationId);
     const existing = await this.findActive(organizationId, toggleId);
     const beforeState = this.snapshot(existing);
@@ -120,6 +153,7 @@ export class FeatureToggleService {
           archivedAt: new Date(),
           archivedById: user.id,
           archivedByName: user.name,
+          enabled: false,
           updatedById: user.id,
           updatedByName: user.name,
         },
@@ -129,13 +163,57 @@ export class FeatureToggleService {
           featureToggleId: toggle.id,
           actorId: user.id,
           actorName: user.name,
-          action: "ARCHIVE",
+          action: "DELETE",
           beforeState,
           afterState: this.snapshot(toggle),
         },
       });
-      return { id: toggle.id, archivedAt: toggle.archivedAt };
+      return { id: toggle.id, deletedAt: toggle.archivedAt };
     });
+  }
+
+  async restore(user: SessionUser, organizationId: string, toggleId: string) {
+    await this.requireManager(user.id, organizationId);
+    const retentionCutoff = new Date(Date.now() - featureToggleRetentionMs);
+    const existing = await this.prisma.featureToggle.findFirst({
+      where: {
+        id: toggleId,
+        organizationId,
+        archivedAt: { gt: retentionCutoff },
+      },
+    });
+    if (!existing) throw new NotFoundException("Deleted feature toggle is no longer available");
+
+    const beforeState = this.snapshot(existing);
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const toggle = await tx.featureToggle.update({
+          where: { id: toggleId },
+          data: {
+            archivedAt: null,
+            archivedById: null,
+            archivedByName: null,
+            enabled: false,
+            updatedById: user.id,
+            updatedByName: user.name,
+          },
+        });
+        await tx.featureToggleAuditEvent.create({
+          data: {
+            featureToggleId: toggle.id,
+            actorId: user.id,
+            actorName: user.name,
+            action: "RESTORE",
+            beforeState,
+            afterState: this.snapshot(toggle),
+          },
+        });
+        return this.toView(toggle);
+      });
+    } catch (error) {
+      this.throwOnDuplicateName(error);
+      throw error;
+    }
   }
 
   async history(

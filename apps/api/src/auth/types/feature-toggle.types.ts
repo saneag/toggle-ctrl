@@ -18,6 +18,18 @@ export type FeatureToggleView = FeatureToggleState & {
   updatedBy: string;
 };
 
+export type FeatureTogglePageView = {
+  toggles: FeatureToggleView[];
+  page: number;
+  total: number;
+  hasMore: boolean;
+};
+
+export type DeletedFeatureToggleView = FeatureToggleView & {
+  deletedAt: Date;
+  deletedBy: string;
+};
+
 export type FeatureToggleAuditView = {
   id: string;
   action: string;

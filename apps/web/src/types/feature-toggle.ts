@@ -9,11 +9,23 @@ export type FeatureToggle = {
   updatedBy: string;
 };
 
+export type FeatureTogglePage = {
+  toggles: FeatureToggle[];
+  page: number;
+  total: number;
+  hasMore: boolean;
+};
+
+export type DeletedFeatureToggle = FeatureToggle & {
+  deletedAt: string;
+  deletedBy: string;
+};
+
 export type FeatureToggleState = Pick<FeatureToggle, "name" | "description" | "enabled">;
 
 export type FeatureToggleAuditEvent = {
   id: string;
-  action: "CREATE" | "UPDATE" | "TOGGLE" | "ARCHIVE";
+  action: "CREATE" | "UPDATE" | "TOGGLE" | "ARCHIVE" | "DELETE" | "RESTORE";
   actor: string;
   beforeState: FeatureToggleState | null;
   afterState: FeatureToggleState | null;

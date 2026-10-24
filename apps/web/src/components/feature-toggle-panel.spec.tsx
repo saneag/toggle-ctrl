@@ -12,11 +12,13 @@ import {
 import { FeatureTogglePanel } from "./feature-toggle-panel.js";
 
 vi.mock("../utils/feature-toggles.js", () => ({
-  archiveFeatureToggle: vi.fn(),
   createFeatureToggle: vi.fn(),
+  deleteFeatureToggle: vi.fn(),
+  getDeletedFeatureToggles: vi.fn(),
   getFeatureToggleHistory: vi.fn(),
   getFeatureToggleSdkKey: vi.fn(),
   getFeatureToggles: vi.fn(),
+  restoreFeatureToggle: vi.fn(),
   rotateFeatureToggleSdkKey: vi.fn(),
   updateFeatureToggle: vi.fn(),
 }));
@@ -53,7 +55,12 @@ describe("FeatureTogglePanel", () => {
         disconnect() {}
       },
     );
-    vi.mocked(getFeatureToggles).mockResolvedValue([toggle]);
+    vi.mocked(getFeatureToggles).mockResolvedValue({
+      toggles: [toggle],
+      page: 1,
+      total: 1,
+      hasMore: false,
+    });
     vi.mocked(getFeatureToggleHistory).mockResolvedValue([]);
     vi.mocked(getFeatureToggleSdkKey).mockResolvedValue({
       key: "tc_live_example",
