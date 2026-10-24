@@ -11,5 +11,9 @@ dist-ssr
 .env
 .cache
 .playwright-mcp/
+.agents/
+.claude/
+.windsurf/
+skills-lock.json
 server/dist
 public/dist
