@@ -101,7 +101,7 @@ export function InviteForm({ organizationId, onInvited, onCancel }: InviteFormPr
         </div>
         <DialogFooter>
           <Button
-            className="border-border text-foreground bg-[#f4f4f5] hover:bg-[#e9e9eb]"
+            className="border-border text-foreground bg-secondary hover:bg-accent"
             disabled={mutation.isPending}
             onClick={onCancel}
             type="button"

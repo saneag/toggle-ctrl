@@ -413,7 +413,7 @@ export function FeatureTogglePanel({ organizationId, role }: FeatureTogglePanelP
             )}
             <DialogFooter>
               <Button
-                className="border-border text-card-foreground bg-[#f4f4f5] hover:bg-[#e9e9eb]"
+                className="border-border text-card-foreground bg-secondary hover:bg-accent"
                 onClick={() => setIsFormOpen(false)}
                 type="button"
                 variant="outline"
@@ -478,7 +478,7 @@ export function FeatureTogglePanel({ organizationId, role }: FeatureTogglePanelP
           )}
           <DialogFooter>
             <Button
-              className="border-border text-card-foreground bg-[#f4f4f5] hover:bg-[#e9e9eb]"
+              className="border-border text-card-foreground bg-secondary hover:bg-accent"
               onClick={() => setHistoryToggle(null)}
               variant="outline"
             >
@@ -498,7 +498,7 @@ export function FeatureTogglePanel({ organizationId, role }: FeatureTogglePanelP
           </DialogHeader>
           <DialogFooter>
             <Button
-              className="border-border text-card-foreground bg-[#f4f4f5] hover:bg-[#e9e9eb]"
+              className="border-border text-card-foreground bg-secondary hover:bg-accent"
               onClick={() => setIsRotateDialogOpen(false)}
               variant="outline"
             >

@@ -55,7 +55,11 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu.js";
 import { Input } from "./ui/input.js";
-import { workspaceColorStyles, workspaceIcons } from "./workspace-appearance.js";
+import {
+  workspaceColorStyles,
+  workspaceColorThemes,
+  workspaceIcons,
+} from "./workspace-appearance.js";
 import type { DashboardProps } from "./workspace.types.js";
 
 export function Dashboard({ user, organizationId = "", section }: DashboardProps) {
@@ -88,6 +92,9 @@ export function Dashboard({ user, organizationId = "", section }: DashboardProps
   });
   const organization = organizationQuery.data;
   const isAdmin = organization?.role === "ADMIN";
+  const workspaceThemeColor = isSettingsOpen
+    ? settingsColor
+    : ((organization?.color || "teal") as WorkspaceColor);
   const organizationSummaryQuery = useQuery({
     queryKey: ["organization-summary"],
     queryFn: getOrganizationSummary,
@@ -95,6 +102,37 @@ export function Dashboard({ user, organizationId = "", section }: DashboardProps
   });
   const hasAdminWorkspace = (organizationSummaryQuery.data?.admin ?? 0) > 0;
   const canCreateWorkspace = user.plan === "PRO" || !hasAdminWorkspace;
+
+  useEffect(() => {
+    if (!activeId || !organization) return;
+
+    const theme = workspaceColorThemes[workspaceThemeColor];
+    const variables = {
+      "--primary": theme.primary,
+      "--primary-foreground": "#ffffff",
+      "--secondary": theme.tint,
+      "--secondary-foreground": "#181930",
+      "--accent": theme.tint,
+      "--accent-foreground": "#181930",
+      "--border": theme.border,
+      "--input": theme.border,
+      "--ring": theme.primary,
+    };
+    const previous = Object.entries(variables).map(
+      ([name]) => [name, document.body.style.getPropertyValue(name)] as const,
+    );
+
+    for (const [name, value] of Object.entries(variables)) {
+      document.body.style.setProperty(name, value);
+    }
+
+    return () => {
+      for (const [name, value] of previous) {
+        if (value) document.body.style.setProperty(name, value);
+        else document.body.style.removeProperty(name);
+      }
+    };
+  }, [activeId, organization, workspaceThemeColor]);
 
   useEffect(() => {
     const timeout = window.setTimeout(
@@ -260,7 +298,7 @@ export function Dashboard({ user, organizationId = "", section }: DashboardProps
         onLogout={() => signOutMutation.mutate()}
       />
       <main className="min-w-0 flex-1 md:ml-[264px]">
-        <header className="text-muted-foreground sticky top-3 z-10 mx-3 mt-3 flex h-14 items-center justify-between rounded-2xl border border-white/80 bg-white/55 px-4 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_8px_28px_rgba(38,163,142,0.10)] backdrop-blur-2xl backdrop-saturate-150 sm:px-8">
+        <header className="text-muted-foreground sticky top-3 z-10 mx-3 mt-3 flex h-14 items-center justify-between rounded-2xl border border-white/80 bg-white/55 px-4 text-sm shadow-[inset_0_1px_0_rgba(255,255,255,0.95),0_8px_28px_color-mix(in_srgb,var(--primary)_10%,transparent)] backdrop-blur-2xl backdrop-saturate-150 sm:px-8">
           <div>
             <Link
               to="/"
@@ -553,7 +591,7 @@ export function Dashboard({ user, organizationId = "", section }: DashboardProps
               <span className="block">Workspace name</span>
               <Input
                 autoFocus
-                className="bg-[#f4f4f5]"
+                className="bg-secondary hover:bg-accent"
                 id="workspace-name"
                 maxLength={80}
                 onChange={(event) => setWorkspaceName(event.target.value)}
@@ -563,7 +601,7 @@ export function Dashboard({ user, organizationId = "", section }: DashboardProps
             </label>
             <DialogFooter>
               <Button
-                className="border-border text-foreground bg-[#f4f4f5] hover:bg-[#e9e9eb]"
+                className="border-border text-foreground bg-secondary hover:bg-accent"
                 onClick={() => setIsCreateDialogOpen(false)}
                 type="button"
                 variant="outline"
@@ -656,7 +694,7 @@ export function Dashboard({ user, organizationId = "", section }: DashboardProps
               </fieldset>
               <DialogFooter>
                 <Button
-                  className="border-border text-foreground bg-[#f4f4f5] hover:bg-[#e9e9eb]"
+                  className="border-border text-foreground bg-secondary hover:bg-accent"
                   onClick={() => setIsSettingsOpen(false)}
                   type="button"
                   variant="outline"

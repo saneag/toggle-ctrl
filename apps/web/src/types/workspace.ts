@@ -31,6 +31,12 @@ export type WorkspaceIcon =
 export type WorkspaceColor =
   "teal" | "blue" | "indigo" | "violet" | "rose" | "orange" | "amber" | "slate";
 
+export type WorkspaceTheme = {
+  primary: string;
+  tint: string;
+  border: string;
+};
+
 export type Organization = {
   id: string;
   name: string;

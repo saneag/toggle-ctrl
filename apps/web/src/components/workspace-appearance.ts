@@ -30,7 +30,7 @@ import {
   Zap,
 } from "lucide-react";
 
-import type { WorkspaceColor, WorkspaceIcon } from "../types.js";
+import type { WorkspaceColor, WorkspaceIcon, WorkspaceTheme } from "../types.js";
 import type { WorkspaceColorStyle } from "./workspace.types.js";
 
 export const workspaceIcons: Record<WorkspaceIcon, LucideIcon> = {
@@ -73,4 +73,15 @@ export const workspaceColorStyles: Record<WorkspaceColor, WorkspaceColorStyle> =
   orange: { icon: "bg-orange-100 text-orange-700", swatch: "bg-orange-500" },
   amber: { icon: "bg-amber-100 text-amber-700", swatch: "bg-amber-500" },
   slate: { icon: "bg-slate-200 text-slate-700", swatch: "bg-slate-500" },
+};
+
+export const workspaceColorThemes: Record<WorkspaceColor, WorkspaceTheme> = {
+  teal: { primary: "#0f8a78", tint: "#e2f7f3", border: "#b3ddd4" },
+  blue: { primary: "#1d4ed8", tint: "#eff6ff", border: "#bfdbfe" },
+  indigo: { primary: "#4338ca", tint: "#eef2ff", border: "#c7d2fe" },
+  violet: { primary: "#6d28d9", tint: "#f5f3ff", border: "#ddd6fe" },
+  rose: { primary: "#be123c", tint: "#fff1f2", border: "#fecdd3" },
+  orange: { primary: "#c2410c", tint: "#fff7ed", border: "#fed7aa" },
+  amber: { primary: "#a16207", tint: "#fffbeb", border: "#fde68a" },
+  slate: { primary: "#475569", tint: "#f1f5f9", border: "#cbd5e1" },
 };
