@@ -9,6 +9,7 @@ import {
   MoreHorizontal,
   Pencil,
   RefreshCw,
+  ShieldCheck,
   ToggleLeft,
   Trash2,
   UserPlus,
@@ -38,7 +39,6 @@ import { FeatureTogglePanel } from "./feature-toggle-panel.js";
 import { InviteForm } from "./invite-form.js";
 import { MembersPanel } from "./members-panel.js";
 import { Sidebar, workspaceLimitMessage } from "./sidebar.js";
-import { Badge } from "./ui/badge.js";
 import { Button } from "./ui/button.js";
 import {
   Dialog,
@@ -293,7 +293,6 @@ export function Dashboard({ user, organizationId = "", section }: DashboardProps
                     <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
                       Good morning, {user.name.split(" ")[0]}
                     </h1>
-                    {isAdmin && <Badge variant="secondary">ADMIN</Badge>}
                   </div>
                   {isAdmin && (
                     <DropdownMenu>
@@ -338,11 +337,22 @@ export function Dashboard({ user, organizationId = "", section }: DashboardProps
                     </DropdownMenu>
                   )}
                 </div>
-                <p className="text-muted-foreground mt-2 text-sm">
-                  {organization
-                    ? `Manage access to ${organization.name}.`
-                    : "Create or join a workspace to manage feature flags with your team."}
-                </p>
+                <div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm">
+                  <p>
+                    {organization
+                      ? `Manage access to ${organization.name}.`
+                      : "Create or join a workspace to manage feature flags with your team."}
+                  </p>
+                  {organization?.role && (
+                    <p className="inline-flex items-center gap-1.5">
+                      <ShieldCheck aria-hidden="true" className="text-primary size-4" />
+                      <span>Your role:</span>
+                      <span className="text-foreground font-medium">
+                        {organization.role.charAt(0) + organization.role.slice(1).toLowerCase()}
+                      </span>
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
           )}
