@@ -8,7 +8,7 @@ export function configureCors(app: INestApplication): void {
   app.enableCors({
     origin: origins,
     credentials: true,
-    allowedHeaders: ["Content-Type", "X-CSRF-Token"],
+    allowedHeaders: ["Content-Type", "X-CSRF-Token", "X-Workspace-SDK-Key"],
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
   });
 }

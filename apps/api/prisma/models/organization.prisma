@@ -1,10 +1,12 @@
 model Organization {
-  id          String       @id @default(uuid())
-  name        String
-  icon        String       @default("flag")
-  color       String       @default("teal")
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @default(now()) @updatedAt
-  memberships Membership[]
-  invitations Invitation[]
+  id                  String       @id @default(uuid())
+  name                String
+  icon                String       @default("flag")
+  color               String       @default("teal")
+  createdAt           DateTime     @default(now())
+  updatedAt           DateTime     @default(now()) @updatedAt
+  memberships         Membership[]
+  invitations         Invitation[]
+  featureToggles      FeatureToggle[]
+  featureToggleSdkKey FeatureToggleSdkKey?
 }

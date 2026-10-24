@@ -34,6 +34,7 @@ import { removeMembers } from "../utils/remove-members.js";
 import { signOut } from "../utils/sign-out.js";
 import { updateOrganization } from "../utils/update-organization.js";
 import { AppPage } from "./app-page.js";
+import { FeatureTogglePanel } from "./feature-toggle-panel.js";
 import { InviteForm } from "./invite-form.js";
 import { MembersPanel } from "./members-panel.js";
 import { Sidebar, workspaceLimitMessage } from "./sidebar.js";
@@ -288,68 +289,70 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
           </div>
         </header>
         <section className="mx-auto w-full max-w-5xl p-5 sm:p-8">
-          <div className="mb-9">
-            <div>
-              <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider">
-                YOUR TEAM
-              </p>
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex min-w-0 flex-wrap items-center gap-3">
-                  <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                    Good morning, {user.name.split(" ")[0]}
-                  </h1>
-                  {isAdmin && <Badge variant="secondary">ADMIN</Badge>}
+          {activeWorkspaceSection === null && (
+            <div className="mb-9">
+              <div>
+                <p className="text-muted-foreground mb-3 text-xs font-semibold tracking-wider">
+                  YOUR TEAM
+                </p>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex min-w-0 flex-wrap items-center gap-3">
+                    <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                      Good morning, {user.name.split(" ")[0]}
+                    </h1>
+                    {isAdmin && <Badge variant="secondary">ADMIN</Badge>}
+                  </div>
+                  {isAdmin && (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          aria-label="Workspace actions"
+                          className="border-border bg-card text-foreground hover:bg-accent shrink-0"
+                          size="icon-sm"
+                          variant="outline"
+                        >
+                          <MoreHorizontal aria-hidden="true" className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="border-border bg-card w-48">
+                        <DropdownMenuItem
+                          className="cursor-pointer"
+                          onSelect={() => {
+                            if (!organization) return;
+                            settingsMutation.reset();
+                            setSettingsErrorOrganizationId(null);
+                            setSettingsName(organization.name);
+                            setSettingsIcon((organization.icon || "flag") as WorkspaceIcon);
+                            setSettingsColor((organization.color || "teal") as WorkspaceColor);
+                            setIsSettingsOpen(true);
+                          }}
+                        >
+                          <Pencil aria-hidden="true" className="size-4" />
+                          Edit workspace
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive cursor-pointer"
+                          onSelect={() => {
+                            setDeleteConfirmationName("");
+                            deleteOrganizationMutation.reset();
+                            setIsDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 aria-hidden="true" className="size-4" />
+                          Delete workspace
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
                 </div>
-                {isAdmin && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button
-                        aria-label="Workspace actions"
-                        className="border-border bg-card text-foreground hover:bg-accent shrink-0"
-                        size="icon-sm"
-                        variant="outline"
-                      >
-                        <MoreHorizontal aria-hidden="true" className="size-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="border-border bg-card w-48">
-                      <DropdownMenuItem
-                        className="cursor-pointer"
-                        onSelect={() => {
-                          if (!organization) return;
-                          settingsMutation.reset();
-                          setSettingsErrorOrganizationId(null);
-                          setSettingsName(organization.name);
-                          setSettingsIcon((organization.icon || "flag") as WorkspaceIcon);
-                          setSettingsColor((organization.color || "teal") as WorkspaceColor);
-                          setIsSettingsOpen(true);
-                        }}
-                      >
-                        <Pencil aria-hidden="true" className="size-4" />
-                        Edit workspace
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-destructive focus:text-destructive cursor-pointer"
-                        onSelect={() => {
-                          setDeleteConfirmationName("");
-                          deleteOrganizationMutation.reset();
-                          setIsDeleteDialogOpen(true);
-                        }}
-                      >
-                        <Trash2 aria-hidden="true" className="size-4" />
-                        Delete workspace
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
+                <p className="text-muted-foreground mt-2 text-sm">
+                  {organization
+                    ? `Manage access to ${organization.name}.`
+                    : "Create or join a workspace to manage feature flags with your team."}
+                </p>
               </div>
-              <p className="text-muted-foreground mt-2 text-sm">
-                {organization
-                  ? `Manage access to ${organization.name}.`
-                  : "Create or join a workspace to manage feature flags with your team."}
-              </p>
             </div>
-          </div>
+          )}
           {notice && (
             <p
               className="border-primary/20 bg-secondary text-foreground mb-6 rounded-md border px-4 py-3 text-sm"
@@ -490,16 +493,7 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                       onSelectedStatusesChange={setSelectedMemberStatuses}
                     />
                   ) : (
-                    <div className="border-border bg-card rounded-xl border p-8 text-center">
-                      <ToggleLeft
-                        aria-hidden="true"
-                        className="text-muted-foreground mx-auto mb-3 size-8"
-                      />
-                      <p className="font-medium">Feature toggles aren’t available yet</p>
-                      <p className="text-muted-foreground mt-1 text-sm">
-                        Feature toggle management hasn’t been implemented yet.
-                      </p>
-                    </div>
+                    <FeatureTogglePanel organizationId={activeId} role={organization.role} />
                   )}
                 </>
               )}

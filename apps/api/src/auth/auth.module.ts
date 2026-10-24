@@ -3,6 +3,12 @@ import { Module } from "@nestjs/common";
 import { AuthController } from "./auth.controller.js";
 import { AuthService } from "./auth.service.js";
 import { EmailService } from "./email.service.js";
+import {
+  FeatureToggleController,
+  FeatureToggleSdkKeyController,
+  PublicFeatureToggleController,
+} from "./feature-toggle.controller.js";
+import { FeatureToggleService } from "./feature-toggle.service.js";
 import { InvitationController } from "./invitation.controller.js";
 import { InvitationService } from "./invitation.service.js";
 import { MembershipController } from "./membership.controller.js";
@@ -12,7 +18,15 @@ import { OrganizationService } from "./organization.service.js";
 import { SessionService } from "./session.service.js";
 
 @Module({
-  controllers: [AuthController, OrganizationController, MembershipController, InvitationController],
+  controllers: [
+    AuthController,
+    OrganizationController,
+    MembershipController,
+    InvitationController,
+    FeatureToggleController,
+    FeatureToggleSdkKeyController,
+    PublicFeatureToggleController,
+  ],
   providers: [
     AuthService,
     SessionService,
@@ -20,6 +34,7 @@ import { SessionService } from "./session.service.js";
     MembershipService,
     InvitationService,
     EmailService,
+    FeatureToggleService,
   ],
 })
 export class AuthModule {}

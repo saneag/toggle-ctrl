@@ -1,14 +1,18 @@
 model User {
-  id              String         @id @default(uuid())
-  email           String         @unique
-  name            String
-  passwordHash    String?
-  plan            Plan           @default(FREE)
-  emailVerifiedAt DateTime?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @default(now()) @updatedAt
-  memberships     Membership[]
-  sessions        Session[]
-  tokens          AccountToken[]
-  invitationsSent Invitation[]   @relation("InvitationSender")
+  id                     String         @id @default(uuid())
+  email                  String         @unique
+  name                   String
+  passwordHash           String?
+  plan                   Plan           @default(FREE)
+  emailVerifiedAt        DateTime?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @default(now()) @updatedAt
+  memberships            Membership[]
+  sessions               Session[]
+  tokens                 AccountToken[]
+  invitationsSent        Invitation[]   @relation("InvitationSender")
+  createdFeatureToggles  FeatureToggle[] @relation("FeatureToggleCreator")
+  updatedFeatureToggles  FeatureToggle[] @relation("FeatureToggleUpdater")
+  archivedFeatureToggles FeatureToggle[] @relation("FeatureToggleArchiver")
+  featureToggleEvents    FeatureToggleAuditEvent[]
 }
