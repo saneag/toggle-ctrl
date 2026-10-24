@@ -3,7 +3,17 @@ import { type FormEvent, useEffect, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowUpRight, MoreHorizontal, Pencil, RefreshCw, Trash2, UserPlus } from "lucide-react";
+import {
+  ArrowLeft,
+  ArrowUpRight,
+  MoreHorizontal,
+  Pencil,
+  RefreshCw,
+  ToggleLeft,
+  Trash2,
+  UserPlus,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import type {
@@ -57,6 +67,9 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [workspaceName, setWorkspaceName] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [activeWorkspaceSection, setActiveWorkspaceSection] = useState<
+    "members" | "toggles" | null
+  >(null);
   const [settingsName, setSettingsName] = useState("");
   const [settingsIcon, setSettingsIcon] = useState<WorkspaceIcon>("flag");
   const [settingsColor, setSettingsColor] = useState<WorkspaceColor>("teal");
@@ -69,6 +82,10 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
   const [selectedMemberStatuses, setSelectedMemberStatuses] = useState<MemberStatus[]>([]);
   const refreshIconRef = useRef<SVGSVGElement>(null);
   const queryClient = useQueryClient();
+  useEffect(() => {
+    setActiveWorkspaceSection(null);
+  }, [activeId]);
+
   const organizationQuery = useQuery({
     queryKey: ["organization", activeId],
     queryFn: () => getOrganization(activeId),
@@ -374,59 +391,118 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
           )}
           {organization ? (
             <>
-              <div className="mb-4 flex items-center justify-between">
-                <div>
-                  <h2 className="font-semibold">Members</h2>
-                  <p className="text-muted-foreground mt-1 text-sm">
-                    People who can access this workspace.
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 sm:gap-3">
-                  <Button
-                    className="border-border bg-card text-foreground hover:bg-accent"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      refreshIconRef.current?.animate(
-                        [{ transform: "rotate(0deg)" }, { transform: "rotate(360deg)" }],
-                        { duration: 500, easing: "linear" },
-                      );
-                      void membersQuery.refetch();
-                    }}
+              {activeWorkspaceSection === null ? (
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <button
+                    className="border-border bg-card hover:bg-accent/50 focus-visible:ring-ring rounded-xl border p-6 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                    onClick={() => setActiveWorkspaceSection("members")}
+                    type="button"
                   >
-                    <RefreshCw ref={refreshIconRef} aria-hidden="true" className="size-4" />
-                    Refresh
-                  </Button>
-                  {isAdmin && (
-                    <Button onClick={() => setIsInviteDialogOpen(true)}>
-                      <UserPlus aria-hidden="true" className="size-4" />
-                      Invite member
-                    </Button>
-                  )}
+                    <Users aria-hidden="true" className="text-primary mb-5 size-6" />
+                    <h2 className="font-semibold">Members</h2>
+                    <p className="text-muted-foreground mt-1 text-sm">
+                      View and manage people who can access this workspace.
+                    </p>
+                  </button>
+                  <button
+                    className="border-border bg-card hover:bg-accent/50 focus-visible:ring-ring rounded-xl border p-6 text-left transition-colors focus-visible:ring-2 focus-visible:outline-none"
+                    onClick={() => setActiveWorkspaceSection("toggles")}
+                    type="button"
+                  >
+                    <ToggleLeft aria-hidden="true" className="text-primary mb-5 size-6" />
+                    <h2 className="font-semibold">Feature toggles</h2>
+                    <p className="text-muted-foreground mt-1 text-sm">
+                      View the feature toggles for this workspace.
+                    </p>
+                  </button>
                 </div>
-              </div>
-              <MembersPanel
-                members={members}
-                isLoading={membersQuery.isPending}
-                hasMoreMembers={membersQuery.hasNextPage ?? false}
-                isLoadingMoreMembers={membersQuery.isFetchingNextPage}
-                onLoadMoreMembers={loadNextMembers}
-                isAdmin={isAdmin}
-                currentUserId={user.id}
-                isRemovingMembers={removeMembersMutation.isPending}
-                onRemoveMembers={async (selection) => {
-                  await removeMembersMutation.mutateAsync({
-                    organizationId: activeId,
-                    ...selection,
-                  });
-                }}
-                searchQuery={memberSearchQuery}
-                onSearchQueryChange={setMemberSearchQuery}
-                selectedRoles={selectedMemberRoles}
-                onSelectedRolesChange={setSelectedMemberRoles}
-                selectedStatuses={selectedMemberStatuses}
-                onSelectedStatusesChange={setSelectedMemberStatuses}
-              />
+              ) : (
+                <>
+                  <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <Button
+                        aria-label="Back to workspace sections"
+                        className="border-border bg-card text-foreground hover:bg-accent"
+                        onClick={() => setActiveWorkspaceSection(null)}
+                        size="icon-sm"
+                        variant="outline"
+                      >
+                        <ArrowLeft aria-hidden="true" className="size-4" />
+                      </Button>
+                      <div>
+                        <h2 className="font-semibold">
+                          {activeWorkspaceSection === "members" ? "Members" : "Feature toggles"}
+                        </h2>
+                        <p className="text-muted-foreground mt-1 text-sm">
+                          {activeWorkspaceSection === "members"
+                            ? "People who can access this workspace."
+                            : "Feature toggles for this workspace."}
+                        </p>
+                      </div>
+                    </div>
+                    {activeWorkspaceSection === "members" && (
+                      <div className="flex items-center gap-2 sm:gap-3">
+                        <Button
+                          className="border-border bg-card text-foreground hover:bg-accent"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            refreshIconRef.current?.animate(
+                              [{ transform: "rotate(0deg)" }, { transform: "rotate(360deg)" }],
+                              { duration: 500, easing: "linear" },
+                            );
+                            void membersQuery.refetch();
+                          }}
+                        >
+                          <RefreshCw ref={refreshIconRef} aria-hidden="true" className="size-4" />
+                          Refresh
+                        </Button>
+                        {isAdmin && (
+                          <Button onClick={() => setIsInviteDialogOpen(true)}>
+                            <UserPlus aria-hidden="true" className="size-4" />
+                            Invite member
+                          </Button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {activeWorkspaceSection === "members" ? (
+                    <MembersPanel
+                      members={members}
+                      isLoading={membersQuery.isPending}
+                      hasMoreMembers={membersQuery.hasNextPage ?? false}
+                      isLoadingMoreMembers={membersQuery.isFetchingNextPage}
+                      onLoadMoreMembers={loadNextMembers}
+                      isAdmin={isAdmin}
+                      currentUserId={user.id}
+                      isRemovingMembers={removeMembersMutation.isPending}
+                      onRemoveMembers={async (selection) => {
+                        await removeMembersMutation.mutateAsync({
+                          organizationId: activeId,
+                          ...selection,
+                        });
+                      }}
+                      searchQuery={memberSearchQuery}
+                      onSearchQueryChange={setMemberSearchQuery}
+                      selectedRoles={selectedMemberRoles}
+                      onSelectedRolesChange={setSelectedMemberRoles}
+                      selectedStatuses={selectedMemberStatuses}
+                      onSelectedStatusesChange={setSelectedMemberStatuses}
+                    />
+                  ) : (
+                    <div className="border-border bg-card rounded-xl border p-8 text-center">
+                      <ToggleLeft
+                        aria-hidden="true"
+                        className="text-muted-foreground mx-auto mb-3 size-8"
+                      />
+                      <p className="font-medium">Feature toggles aren’t available yet</p>
+                      <p className="text-muted-foreground mt-1 text-sm">
+                        Feature toggle management hasn’t been implemented yet.
+                      </p>
+                    </div>
+                  )}
+                </>
+              )}
               {isAdmin && (
                 <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
                   <DialogContent className="border-0 p-0 sm:max-w-2xl">
@@ -442,7 +518,7 @@ export function Dashboard({ user, organizationId = "" }: DashboardProps) {
                   </DialogContent>
                 </Dialog>
               )}
-              {!isAdmin && (
+              {activeWorkspaceSection === "members" && !isAdmin && (
                 <div className="border-border bg-card text-muted-foreground mt-5 rounded-md border p-4 text-sm">
                   You have {organization.role.toLowerCase()} access in this workspace. Contact an
                   admin to invite new members.
