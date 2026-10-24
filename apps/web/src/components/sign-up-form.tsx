@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowUpRight, Check, LoaderCircle } from "lucide-react";
@@ -15,6 +16,7 @@ import { Button } from "./ui/button.js";
 import { Input } from "./ui/input.js";
 
 export function SignUpForm() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const invitation = useMemo(() => {
     const search = new URLSearchParams(window.location.search);
@@ -31,7 +33,10 @@ export function SignUpForm() {
   const mutation = useMutation({
     mutationFn: ({ name, email, password }: SignUpFormValues) =>
       signUp(name, email, password, invitation.token),
-    onSuccess: (user) => queryClient.setQueryData(["current-user"], user),
+    onSuccess: (user) => {
+      queryClient.setQueryData(["current-user"], user);
+      navigate("/", { replace: true });
+    },
     onError: (error) => toast.error(error.message),
   });
 

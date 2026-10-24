@@ -1,4 +1,5 @@
 import { useForm } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { LoaderCircle, LogIn } from "lucide-react";
@@ -13,6 +14,7 @@ import { Button } from "./ui/button.js";
 import { Input } from "./ui/input.js";
 
 export function SignInForm() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const {
     register,
@@ -21,7 +23,10 @@ export function SignInForm() {
   } = useForm<SignInFormValues>({ mode: "onChange" });
   const mutation = useMutation({
     mutationFn: ({ email, password }: SignInFormValues) => signIn(email, password),
-    onSuccess: (user) => queryClient.setQueryData(["current-user"], user),
+    onSuccess: (user) => {
+      queryClient.setQueryData(["current-user"], user);
+      navigate("/", { replace: true });
+    },
     onError: (error) => toast.error(error.message),
   });
 
