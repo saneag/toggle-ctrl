@@ -41,8 +41,17 @@ const organizationIcons = [
   "wrench",
   "workflow",
   "coffee",
-];
-const organizationColors = ["teal", "blue", "indigo", "violet", "rose", "orange", "amber", "slate"];
+] as const;
+const organizationColors = [
+  "teal",
+  "blue",
+  "indigo",
+  "violet",
+  "rose",
+  "orange",
+  "amber",
+  "slate",
+] as const;
 
 @Injectable()
 export class OrganizationService {
@@ -254,16 +263,22 @@ export class OrganizationService {
     const data: OrganizationUpdateData = {};
     if (input.name !== undefined) data.name = readRequiredText(input.name, "Workspace name");
     if (input.icon !== undefined) {
-      if (typeof input.icon !== "string" || !organizationIcons.includes(input.icon)) {
+      if (
+        typeof input.icon !== "string" ||
+        !organizationIcons.includes(input.icon as (typeof organizationIcons)[number])
+      ) {
         throw new HttpException("Choose a valid workspace icon", HttpStatus.BAD_REQUEST);
       }
-      data.icon = input.icon;
+      data.icon = input.icon as (typeof organizationIcons)[number];
     }
     if (input.color !== undefined) {
-      if (typeof input.color !== "string" || !organizationColors.includes(input.color)) {
+      if (
+        typeof input.color !== "string" ||
+        !organizationColors.includes(input.color as (typeof organizationColors)[number])
+      ) {
         throw new HttpException("Choose a valid workspace color", HttpStatus.BAD_REQUEST);
       }
-      data.color = input.color;
+      data.color = input.color as (typeof organizationColors)[number];
     }
     if (!Object.keys(data).length)
       throw new HttpException("Workspace name, icon, or color is required", HttpStatus.BAD_REQUEST);

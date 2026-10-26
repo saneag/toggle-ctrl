@@ -81,7 +81,7 @@
       var(--app-background) 50%,
       color-mix(in srgb, var(--primary) 7%, var(--app-background)) 100%
     );
-  --background: #181930;
+  --background: #f3f5f9;
   --foreground: #181930;
   --card: #ffffff;
   --card-foreground: #181930;

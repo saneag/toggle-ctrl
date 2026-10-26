@@ -6,44 +6,16 @@ model FeatureToggle {
   enabled        Boolean                   @default(false)
   createdAt      DateTime                  @default(now())
   updatedAt      DateTime                  @default(now()) @updatedAt
-  createdById    String?
-  createdByName  String
-  updatedById    String?
-  updatedByName  String
+  createdById    String
+  updatedById    String
   archivedAt     DateTime?
   archivedById   String?
-  archivedByName String?
   organization   Organization              @relation(fields: [organizationId], references: [id], onDelete: Cascade)
-  createdBy      User?                     @relation("FeatureToggleCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy      User?                     @relation("FeatureToggleUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
-  archivedBy     User?                     @relation("FeatureToggleArchiver", fields: [archivedById], references: [id], onDelete: SetNull)
-  events         FeatureToggleAuditEvent[]
+  createdBy      User                      @relation("FeatureToggleCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  updatedBy      User                      @relation("FeatureToggleUpdatedBy", fields: [updatedById], references: [id], onDelete: Restrict)
+  archivedBy     User?                     @relation("FeatureToggleArchivedBy", fields: [archivedById], references: [id], onDelete: Restrict)
+  auditEvents    FeatureToggleAuditEvent[]
 
-  @@index([organizationId, archivedAt, updatedAt])
   @@index([archivedAt])
-}
-
-model FeatureToggleAuditEvent {
-  id              String        @id @default(uuid())
-  featureToggleId String
-  actorId         String?
-  actorName       String
-  action          String
-  beforeState     Json?
-  afterState      Json?
-  createdAt       DateTime      @default(now())
-  featureToggle   FeatureToggle @relation(fields: [featureToggleId], references: [id], onDelete: Cascade)
-  actor           User?         @relation(fields: [actorId], references: [id], onDelete: SetNull)
-
-  @@index([featureToggleId, createdAt])
-}
-
-model FeatureToggleSdkKey {
-  id             String       @id @default(uuid())
-  organizationId String       @unique
-  key            String       @unique
-  rotatedAt      DateTime     @default(now())
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @default(now()) @updatedAt
-  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  @@index([organizationId, archivedAt, updatedAt])
 }

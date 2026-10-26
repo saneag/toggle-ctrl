@@ -26,6 +26,11 @@ import type { SessionUser } from "./types/session-user.js";
 const namePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 export const featureToggleRetentionMs = 7 * 24 * 60 * 60 * 1000;
 const featureTogglePageSize = 50;
+const featureToggleUserInclude = {
+  createdBy: { select: { name: true } },
+  updatedBy: { select: { name: true } },
+  archivedBy: { select: { name: true } },
+} as const;
 
 @Injectable()
 export class FeatureToggleService {
@@ -44,6 +49,7 @@ export class FeatureToggleService {
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         skip: (page - 1) * featureTogglePageSize,
         take: featureTogglePageSize + 1,
+        include: featureToggleUserInclude,
       }),
     ]);
     return {
@@ -60,11 +66,12 @@ export class FeatureToggleService {
     const toggles = await this.prisma.featureToggle.findMany({
       where: { organizationId, archivedAt: { gt: retentionCutoff } },
       orderBy: [{ archivedAt: "desc" }, { name: "asc" }],
+      include: featureToggleUserInclude,
     });
     return toggles.map((toggle) => ({
       ...this.toView(toggle),
       deletedAt: toggle.archivedAt!,
-      deletedBy: toggle.archivedByName ?? "Unknown",
+      deletedBy: toggle.archivedBy?.name ?? "Unknown",
     }));
   }
 
@@ -78,16 +85,14 @@ export class FeatureToggleService {
             organizationId,
             ...state,
             createdById: user.id,
-            createdByName: user.name,
             updatedById: user.id,
-            updatedByName: user.name,
           },
+          include: featureToggleUserInclude,
         });
         await tx.featureToggleAuditEvent.create({
           data: {
             featureToggleId: toggle.id,
             actorId: user.id,
-            actorName: user.name,
             action: "CREATE",
             afterState: this.snapshot(toggle),
           },
@@ -120,14 +125,13 @@ export class FeatureToggleService {
           data: {
             ...patch,
             updatedById: user.id,
-            updatedByName: user.name,
           },
+          include: featureToggleUserInclude,
         });
         await tx.featureToggleAuditEvent.create({
           data: {
             featureToggleId: toggle.id,
             actorId: user.id,
-            actorName: user.name,
             action:
               patch.enabled !== undefined && Object.keys(patch).length === 1 ? "TOGGLE" : "UPDATE",
             beforeState,
@@ -152,17 +156,15 @@ export class FeatureToggleService {
         data: {
           archivedAt: new Date(),
           archivedById: user.id,
-          archivedByName: user.name,
           enabled: false,
           updatedById: user.id,
-          updatedByName: user.name,
         },
+        include: featureToggleUserInclude,
       });
       await tx.featureToggleAuditEvent.create({
         data: {
           featureToggleId: toggle.id,
           actorId: user.id,
-          actorName: user.name,
           action: "DELETE",
           beforeState,
           afterState: this.snapshot(toggle),
@@ -181,6 +183,7 @@ export class FeatureToggleService {
         organizationId,
         archivedAt: { gt: retentionCutoff },
       },
+      include: featureToggleUserInclude,
     });
     if (!existing) throw new NotFoundException("Deleted feature toggle is no longer available");
 
@@ -192,17 +195,15 @@ export class FeatureToggleService {
           data: {
             archivedAt: null,
             archivedById: null,
-            archivedByName: null,
             enabled: false,
             updatedById: user.id,
-            updatedByName: user.name,
           },
+          include: featureToggleUserInclude,
         });
         await tx.featureToggleAuditEvent.create({
           data: {
             featureToggleId: toggle.id,
             actorId: user.id,
-            actorName: user.name,
             action: "RESTORE",
             beforeState,
             afterState: this.snapshot(toggle),
@@ -226,11 +227,12 @@ export class FeatureToggleService {
     const events = await this.prisma.featureToggleAuditEvent.findMany({
       where: { featureToggleId: toggleId },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      include: { actor: { select: { name: true } } },
     });
     return events.map((event) => ({
       id: event.id,
       action: event.action,
-      actor: event.actorName,
+      actor: event.actor?.name ?? "System",
       beforeState: event.beforeState as FeatureToggleState | null,
       afterState: event.afterState as FeatureToggleState | null,
       createdAt: event.createdAt,
@@ -311,6 +313,7 @@ export class FeatureToggleService {
   private async findToggle(organizationId: string, toggleId: string) {
     const toggle = await this.prisma.featureToggle.findFirst({
       where: { id: toggleId, organizationId },
+      include: featureToggleUserInclude,
     });
     if (!toggle) throw new NotFoundException("Feature toggle not found");
     return toggle;
@@ -319,6 +322,7 @@ export class FeatureToggleService {
   private async findActive(organizationId: string, toggleId: string) {
     const toggle = await this.prisma.featureToggle.findFirst({
       where: { id: toggleId, organizationId, archivedAt: null },
+      include: featureToggleUserInclude,
     });
     if (!toggle) throw new NotFoundException("Feature toggle not found");
     return toggle;
@@ -387,16 +391,17 @@ export class FeatureToggleService {
     enabled: boolean;
     createdAt: Date;
     updatedAt: Date;
-    createdByName: string;
-    updatedByName: string;
+    createdBy: { name: string };
+    updatedBy: { name: string };
+    archivedBy: { name: string } | null;
   }): FeatureToggleView {
     return {
       id: toggle.id,
       ...this.snapshot(toggle),
       createdAt: toggle.createdAt,
       updatedAt: toggle.updatedAt,
-      createdBy: toggle.createdByName,
-      updatedBy: toggle.updatedByName,
+      createdBy: toggle.createdBy.name,
+      updatedBy: toggle.updatedBy.name,
     };
   }
 

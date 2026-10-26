@@ -22,6 +22,7 @@ export type DashboardProps = {
   organizationId?: string;
   section: WorkspaceSection | null;
 };
+export type AccountSettingsProps = { user: CurrentUser };
 export type HelpCenterProps = { user: CurrentUser };
 export type WorkspaceHomeProps = { user: CurrentUser };
 export type WorkspaceMarkProps = { icon?: WorkspaceIcon | string | null; className?: string };

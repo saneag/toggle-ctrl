@@ -1,0 +1,13 @@
+model FeatureToggleAuditEvent {
+  id              String        @id @default(uuid())
+  featureToggleId String
+  actorId         String?
+  action          String
+  beforeState     Json?
+  afterState      Json?
+  createdAt       DateTime      @default(now())
+  actor           User?         @relation(fields: [actorId], references: [id], onDelete: Restrict)
+  featureToggle   FeatureToggle @relation(fields: [featureToggleId], references: [id], onDelete: Cascade)
+
+  @@index([featureToggleId, createdAt])
+}

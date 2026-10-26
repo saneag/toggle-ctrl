@@ -60,11 +60,47 @@ export class AuthService {
     const password = readLoginPassword(input.password);
 
     const user = await this.prisma.user.findUnique({ where: { email } });
-    if (!user?.passwordHash || !(await checkPassword(password, user.passwordHash))) {
+    if (
+      !user?.passwordHash ||
+      user.deactivatedAt ||
+      !(await checkPassword(password, user.passwordHash))
+    ) {
       throw new UnauthorizedException("Invalid email or password");
     }
 
     return this.sessions.create(user.id);
+  }
+
+  async updateProfile(userId: string, value: unknown) {
+    const name = readRequiredText(value, "Name");
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { name },
+      select: { id: true, name: true, email: true, plan: true },
+    });
+  }
+
+  async changePassword(
+    userId: string,
+    sessionId: string,
+    currentPasswordValue: unknown,
+    newPasswordValue: unknown,
+  ): Promise<void> {
+    const currentPassword = readLoginPassword(currentPasswordValue);
+    const newPassword = readPassword(newPasswordValue);
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user?.passwordHash || !(await checkPassword(currentPassword, user.passwordHash))) {
+      throw new UnauthorizedException("Current password is incorrect");
+    }
+    if (await checkPassword(newPassword, user.passwordHash)) {
+      throw new BadRequestException("Choose a password you have not used for this account");
+    }
+
+    const passwordHash = await hashPassword(newPassword);
+    await this.prisma.$transaction([
+      this.prisma.user.update({ where: { id: userId }, data: { passwordHash } }),
+      this.prisma.session.deleteMany({ where: { userId, id: { not: sessionId } } }),
+    ]);
   }
 
   async setPassword(token: string, value: unknown) {
@@ -81,6 +117,12 @@ export class AuthService {
         throw new BadRequestException("Setup link is invalid or expired");
       }
 
+      const user = await tx.user.findUniqueOrThrow({
+        where: { id: setupToken.userId },
+        select: { deactivatedAt: true },
+      });
+      if (user.deactivatedAt) throw new BadRequestException("This account is deactivated");
+
       await tx.user.update({
         where: { id: setupToken.userId },
         data: { passwordHash, emailVerifiedAt: new Date() },
@@ -90,6 +132,19 @@ export class AuthService {
     });
 
     return this.sessions.create(userId);
+  }
+
+  async deactivate(userId: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      const result = await tx.user.updateMany({
+        where: { id: userId, deactivatedAt: null },
+        data: { deactivatedAt: new Date() },
+      });
+      if (!result.count) throw new UnauthorizedException();
+
+      await tx.session.deleteMany({ where: { userId } });
+      await tx.accountToken.deleteMany({ where: { userId } });
+    });
   }
 
   private async createFirstOrganization(

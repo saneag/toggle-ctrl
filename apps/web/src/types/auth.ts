@@ -6,6 +6,7 @@ export type CurrentUser = {
 };
 
 export type AuthenticatedUserResponse = { user: CurrentUser; csrfToken: string };
+export type LoginResponse = AuthenticatedUserResponse;
 export type CsrfTokenResponse = { csrfToken: string };
 export type SignInFormValues = { email: string; password: string };
 export type SignUpFormValues = { name: string; email: string; password: string };

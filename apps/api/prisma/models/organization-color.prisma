@@ -1,0 +1,10 @@
+enum OrganizationColor {
+  teal
+  blue
+  indigo
+  violet
+  rose
+  orange
+  amber
+  slate
+}

@@ -1,0 +1,30 @@
+enum OrganizationIcon {
+  flag
+  zap
+  rocket
+  flask
+  target
+  layers
+  code
+  building
+  bell
+  book
+  briefcase
+  cloud
+  compass
+  database
+  flame
+  globe
+  heart
+  key
+  lightbulb
+  lock
+  message
+  package
+  puzzle
+  shield
+  users
+  wrench
+  workflow
+  coffee
+}

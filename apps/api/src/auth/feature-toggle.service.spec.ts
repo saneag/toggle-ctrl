@@ -23,12 +23,12 @@ function makeService(role = "ADMIN") {
     createdAt: new Date("2026-10-24T10:00:00.000Z"),
     updatedAt: new Date("2026-10-24T10:00:00.000Z"),
     createdById: user.id,
-    createdByName: user.name,
     updatedById: user.id,
-    updatedByName: user.name,
     archivedAt: null,
     archivedById: null,
-    archivedByName: null,
+    createdBy: { name: user.name },
+    updatedBy: { name: user.name },
+    archivedBy: null,
   };
   const createToggle = vi.fn(async ({ data }: { data: Record<string, unknown> }) => ({
     ...toggle,
@@ -70,11 +70,15 @@ describe("FeatureToggleService", () => {
         name: "checkout-flow",
         enabled: false,
         createdById: user.id,
-        createdByName: user.name,
       }),
+      include: {
+        createdBy: { select: { name: true } },
+        updatedBy: { select: { name: true } },
+        archivedBy: { select: { name: true } },
+      },
     });
     expect(createEvent).toHaveBeenCalledWith({
-      data: expect.objectContaining({ action: "CREATE", actorName: user.name }),
+      data: expect.objectContaining({ action: "CREATE", actorId: user.id }),
     });
     expect(result).toMatchObject({
       name: "checkout-flow",

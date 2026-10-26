@@ -59,7 +59,7 @@ export function MembersPanel({
     ? members.filter((member) => member.role !== "ADMIN" && member.user.id !== currentUserId)
     : [];
   const selectableUserIds = selectableMembers
-    .filter((member) => member.status === "ACTIVE")
+    .filter((member) => member.status !== "INVITED")
     .map((member) => member.user.id);
   const selectableInvitationIds = selectableMembers
     .filter((member) => member.status === "INVITED")
@@ -183,13 +183,17 @@ export function MembersPanel({
               ))}
               <DropdownMenuSeparator />
               <DropdownMenuLabel>Status</DropdownMenuLabel>
-              {(["ACTIVE", "INVITED"] as const).map((status) => (
+              {(["ACTIVE", "DEACTIVATED", "INVITED"] as const).map((status) => (
                 <DropdownMenuCheckboxItem
                   checked={selectedStatuses.includes(status)}
                   key={status}
                   onCheckedChange={(checked) => toggleStatus(status, checked)}
                 >
-                  {status === "ACTIVE" ? "Active" : "Invited"}
+                  {status === "ACTIVE"
+                    ? "Active"
+                    : status === "DEACTIVATED"
+                      ? "Deactivated"
+                      : "Invited"}
                 </DropdownMenuCheckboxItem>
               ))}
             </DropdownMenuContent>
@@ -239,7 +243,7 @@ export function MembersPanel({
                 member.status === "INVITED"
                   ? selectedInvitationIds.includes(member.id)
                   : selectedUserIds.includes(member.user.id);
-              const rowId = member.status === "ACTIVE" ? member.user.id : member.id;
+              const rowId = member.status === "INVITED" ? member.id : member.user.id;
 
               return (
                 <div
@@ -292,9 +296,13 @@ export function MembersPanel({
                   </span>
                   <span className="text-muted-foreground flex items-center gap-2 text-sm">
                     <i
-                      className={`${member.status === "ACTIVE" ? "bg-primary" : "bg-amber-500"} size-2 rounded-full`}
+                      className={`${member.status === "ACTIVE" ? "bg-primary" : member.status === "INVITED" ? "bg-amber-500" : "bg-muted-foreground"} size-2 rounded-full`}
                     />
-                    {member.status === "ACTIVE" ? "Active" : "Invited"}
+                    {member.status === "ACTIVE"
+                      ? "Active"
+                      : member.status === "DEACTIVATED"
+                        ? "Deactivated"
+                        : "Invited"}
                   </span>
                 </div>
               );

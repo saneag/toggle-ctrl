@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -54,31 +55,39 @@ export class MembershipService {
     );
     const statuses = this.parseFilters<MemberStatus>(
       filters.statuses,
-      ["ACTIVE", "INVITED"],
+      ["ACTIVE", "DEACTIVATED", "INVITED"],
       "status",
     );
     const includeActive = statuses.length === 0 || statuses.includes("ACTIVE");
+    const includeDeactivated = statuses.length === 0 || statuses.includes("DEACTIVATED");
     const includeInvited = statuses.length === 0 || statuses.includes("INVITED");
     const roleFilter = roles.length > 0 ? { in: roles } : undefined;
-    const searchFilter = search
+    const memberUserFilter = {
+      ...(!includeActive ? { deactivatedAt: { not: null } } : {}),
+      ...(!includeDeactivated ? { deactivatedAt: null } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: "insensitive" as const } },
+              { email: { contains: search, mode: "insensitive" as const } },
+            ],
+          }
+        : {}),
+    };
+    const searchFilter = Object.keys(memberUserFilter).length
       ? {
-          user: {
-            is: {
-              OR: [
-                { name: { contains: search, mode: "insensitive" as const } },
-                { email: { contains: search, mode: "insensitive" as const } },
-              ],
-            },
-          },
+          user: { is: memberUserFilter },
         }
       : {};
     const offset = (filters.page - 1) * memberPageSize;
     const candidateCount = offset + memberPageSize + 1;
     const [memberships, invitations] = await Promise.all([
-      includeActive
+      includeActive || includeDeactivated
         ? this.prisma.membership.findMany({
             where: { organizationId, ...(roleFilter ? { role: roleFilter } : {}), ...searchFilter },
-            include: { user: { select: { id: true, email: true, name: true } } },
+            include: {
+              user: { select: { id: true, email: true, name: true, deactivatedAt: true } },
+            },
             orderBy: [{ user: { name: "asc" } }, { userId: "asc" }],
             take: candidateCount,
           })
@@ -102,8 +111,12 @@ export class MembershipService {
       ...memberships.map((membership) => ({
         id: membership.userId,
         role: membership.role,
-        status: "ACTIVE" as const,
-        user: membership.user,
+        status: membership.user.deactivatedAt ? ("DEACTIVATED" as const) : ("ACTIVE" as const),
+        user: {
+          id: membership.user.id,
+          email: membership.user.email,
+          name: membership.user.name,
+        },
       })),
       ...invitations.map((invitation) => ({
         id: invitation.id,
@@ -199,6 +212,9 @@ export class MembershipService {
     });
 
     if (existingUser) {
+      if (existingUser.deactivatedAt) {
+        throw new ConflictException("This account is deactivated");
+      }
       const membership = await this.prisma.membership.create({
         data: { organizationId, userId: existingUser.id, role },
       });

@@ -4,6 +4,7 @@ import {
   Controller,
   Get,
   Headers,
+  Patch,
   Post,
   Req,
   Res,
@@ -56,6 +57,38 @@ export class AuthController {
     return { user: session.user, csrfToken: session.csrfToken };
   }
 
+  @Patch("profile")
+  async updateProfile(
+    @Body() body: unknown,
+    @Req() request: Request,
+    @Headers("x-csrf-token") csrf: string,
+  ) {
+    assertAllowedOrigin(request);
+    const user = await this.current(request);
+    await this.sessions.validateCsrf(user.sessionId, csrf);
+    const input = readBody(body);
+    return this.auth.updateProfile(user.id, input.name);
+  }
+
+  @Patch("password")
+  async changePassword(
+    @Body() body: unknown,
+    @Req() request: Request,
+    @Headers("x-csrf-token") csrf: string,
+  ) {
+    assertAllowedOrigin(request);
+    const user = await this.current(request);
+    await this.sessions.validateCsrf(user.sessionId, csrf);
+    const input = readBody(body);
+    await this.auth.changePassword(
+      user.id,
+      user.sessionId,
+      input.currentPassword,
+      input.newPassword,
+    );
+    return { success: true };
+  }
+
   @Post("logout")
   async logout(
     @Req() request: Request,
@@ -65,6 +98,20 @@ export class AuthController {
     const user = await this.current(request);
     await this.sessions.validateCsrf(user.sessionId, csrf);
     await this.sessions.delete(user.sessionId);
+    clearSessionCookie(response);
+    return { success: true };
+  }
+
+  @Post("deactivate")
+  async deactivate(
+    @Req() request: Request,
+    @Headers("x-csrf-token") csrf: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    assertAllowedOrigin(request);
+    const user = await this.current(request);
+    await this.sessions.validateCsrf(user.sessionId, csrf);
+    await this.auth.deactivate(user.id);
     clearSessionCookie(response);
     return { success: true };
   }

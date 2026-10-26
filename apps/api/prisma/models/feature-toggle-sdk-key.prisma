@@ -1,0 +1,9 @@
+model FeatureToggleSdkKey {
+  id             String       @id @default(uuid())
+  organizationId String       @unique
+  key            String       @unique
+  rotatedAt      DateTime     @default(now())
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @default(now()) @updatedAt
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+}

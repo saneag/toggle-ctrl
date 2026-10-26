@@ -1,5 +1,5 @@
 export type MemberRole = "ADMIN" | "MANAGER" | "VIEWER";
-export type MemberStatus = "ACTIVE" | "INVITED";
+export type MemberStatus = "ACTIVE" | "DEACTIVATED" | "INVITED";
 export type MemberDirectoryFilters = {
   search: string;
   roles: string;

@@ -5,6 +5,7 @@ import { Navigate, Route, Routes, useParams, useSearchParams } from "react-route
 import { useQuery } from "@tanstack/react-query";
 import { LoaderCircle } from "lucide-react";
 
+import { AccountSettings } from "./components/account-settings.js";
 import { AuthScreen } from "./components/auth-screen.js";
 import { Dashboard } from "./components/dashboard.js";
 import { HelpCenter } from "./components/help-center.js";
@@ -88,6 +89,7 @@ export function App() {
         element={user ? <WorkspaceRoute user={user} /> : <AuthScreen />}
       />
       <Route path="/help" element={user ? <HelpCenter user={user} /> : <AuthScreen />} />
+      <Route path="/settings" element={user ? <AccountSettings user={user} /> : <AuthScreen />} />
       <Route
         path="/set-password"
         element={

@@ -304,6 +304,11 @@ export function Sidebar({ user, activeId, onSelect, onCreate, canCreate, onLogou
               className="border-border bg-card absolute right-0 bottom-full z-30 mb-2 min-w-36 rounded-lg border p-1 text-left shadow-lg"
               role="menu"
             >
+              <Button asChild className="w-full justify-start" role="menuitem" variant="ghost">
+                <Link to="/settings" onClick={() => setIsAccountMenuOpen(false)}>
+                  Account settings
+                </Link>
+              </Button>
               <Button
                 className="w-full justify-start"
                 onClick={() => {
