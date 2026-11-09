@@ -1,4 +1,4 @@
-import type { OrganizationColor, OrganizationIcon } from "@prisma/client";
+import type { OrganizationColor, OrganizationIcon } from "../../generated/prisma/enums.js";
 
 export type OrganizationUpdateData = {
   name?: string;

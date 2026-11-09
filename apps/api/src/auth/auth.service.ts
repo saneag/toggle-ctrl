@@ -63,6 +63,7 @@ export class AuthService {
     if (
       !user?.passwordHash ||
       user.deactivatedAt ||
+      user.deletedAt ||
       !(await checkPassword(password, user.passwordHash))
     ) {
       throw new UnauthorizedException("Invalid email or password");
@@ -119,9 +120,11 @@ export class AuthService {
 
       const user = await tx.user.findUniqueOrThrow({
         where: { id: setupToken.userId },
-        select: { deactivatedAt: true },
+        select: { deactivatedAt: true, deletedAt: true },
       });
-      if (user.deactivatedAt) throw new BadRequestException("This account is deactivated");
+      if (user.deactivatedAt || user.deletedAt) {
+        throw new BadRequestException("This account is deactivated");
+      }
 
       await tx.user.update({
         where: { id: setupToken.userId },
@@ -144,6 +147,67 @@ export class AuthService {
 
       await tx.session.deleteMany({ where: { userId } });
       await tx.accountToken.deleteMany({ where: { userId } });
+    });
+  }
+
+  async deleteAccount(userId: string, confirmationEmail: unknown, passwordValue: unknown) {
+    const email = readEmail(confirmationEmail);
+    const password = readLoginPassword(passwordValue);
+
+    await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.findUnique({ where: { id: userId } });
+      if (
+        !user ||
+        user.deletedAt ||
+        user.email !== email ||
+        !user.passwordHash ||
+        !(await checkPassword(password, user.passwordHash))
+      ) {
+        throw new UnauthorizedException("Account confirmation failed");
+      }
+
+      const memberships = await tx.membership.findMany({
+        where: { userId, role: "ADMIN" },
+        include: { organization: { select: { id: true, name: true } } },
+      });
+      const organizationsWithoutAnotherAdmin: string[] = [];
+      for (const membership of memberships) {
+        const anotherAdmin = await tx.membership.findFirst({
+          where: {
+            organizationId: membership.organizationId,
+            userId: { not: userId },
+            role: "ADMIN",
+          },
+          select: { userId: true },
+        });
+        if (!anotherAdmin) organizationsWithoutAnotherAdmin.push(membership.organization.name);
+      }
+
+      if (organizationsWithoutAnotherAdmin.length) {
+        throw new ConflictException({
+          message: `Assign another admin in these workspaces before deleting your account: ${organizationsWithoutAnotherAdmin.join(", ")}.`,
+          workspaces: organizationsWithoutAnotherAdmin,
+        });
+      }
+
+      await tx.invitation.deleteMany({
+        where: { OR: [{ invitedById: userId }, { email: user.email }] },
+      });
+      await tx.membership.deleteMany({ where: { userId } });
+      await tx.session.deleteMany({ where: { userId } });
+      await tx.accountToken.deleteMany({ where: { userId } });
+      const deletedAt = new Date();
+      await tx.user.update({
+        where: { id: userId },
+        data: {
+          email: `deleted-${user.id}@deleted.invalid`,
+          name: "Deleted user",
+          passwordHash: null,
+          emailVerifiedAt: null,
+          deactivatedAt: deletedAt,
+          deletedAt,
+        },
+      });
     });
   }
 

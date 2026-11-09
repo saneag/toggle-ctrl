@@ -38,11 +38,25 @@ export class SessionService {
     const session = await this.prisma.session.findUnique({
       where: { tokenHash: hashToken(token) },
       include: {
-        user: { select: { id: true, email: true, name: true, plan: true, deactivatedAt: true } },
+        user: {
+          select: {
+            id: true,
+            email: true,
+            name: true,
+            plan: true,
+            deactivatedAt: true,
+            deletedAt: true,
+          },
+        },
       },
     });
 
-    if (!session || session.expiresAt <= new Date() || session.user.deactivatedAt) {
+    if (
+      !session ||
+      session.expiresAt <= new Date() ||
+      session.user.deactivatedAt ||
+      session.user.deletedAt
+    ) {
       if (session) await this.prisma.session.delete({ where: { id: session.id } });
       throw new UnauthorizedException();
     }

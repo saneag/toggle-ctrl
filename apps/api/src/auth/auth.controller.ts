@@ -116,6 +116,22 @@ export class AuthController {
     return { success: true };
   }
 
+  @Post("delete-account")
+  async deleteAccount(
+    @Body() body: unknown,
+    @Req() request: Request,
+    @Headers("x-csrf-token") csrf: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    assertAllowedOrigin(request);
+    const user = await this.current(request);
+    await this.sessions.validateCsrf(user.sessionId, csrf);
+    const input = readBody(body);
+    await this.auth.deleteAccount(user.id, input.email, input.currentPassword);
+    clearSessionCookie(response);
+    return { success: true };
+  }
+
   @Get("me")
   async me(@Req() request: Request) {
     const user = await this.current(request);

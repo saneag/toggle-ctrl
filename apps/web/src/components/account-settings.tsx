@@ -3,11 +3,12 @@ import { type FormEvent, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { KeyRound, OctagonAlert, Pencil, UserRound } from "lucide-react";
+import { KeyRound, OctagonAlert, Pencil, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 
 import { changePassword } from "../utils/change-password.js";
 import { deactivateAccount } from "../utils/deactivate-account.js";
+import { deleteAccount } from "../utils/delete-account.js";
 import { signOut } from "../utils/sign-out.js";
 import { updateProfile } from "../utils/update-profile.js";
 import { AppPage } from "./app-page.js";
@@ -29,7 +30,10 @@ export function AccountSettings({ user }: AccountSettingsProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [isDeactivateDialogOpen, setIsDeactivateDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [confirmationEmail, setConfirmationEmail] = useState("");
+  const [deleteConfirmationEmail, setDeleteConfirmationEmail] = useState("");
+  const [deletePassword, setDeletePassword] = useState("");
   const [isEditingName, setIsEditingName] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [editedName, setEditedName] = useState(user.name);
@@ -57,6 +61,13 @@ export function AccountSettings({ user }: AccountSettingsProps) {
   });
   const deactivateMutation = useMutation({
     mutationFn: deactivateAccount,
+    onSuccess: () => {
+      queryClient.setQueryData(["current-user"], null);
+      navigate("/", { replace: true });
+    },
+  });
+  const deleteMutation = useMutation({
+    mutationFn: deleteAccount,
     onSuccess: () => {
       queryClient.setQueryData(["current-user"], null);
       navigate("/", { replace: true });
@@ -341,6 +352,44 @@ export function AccountSettings({ user }: AccountSettingsProps) {
                 </Button>
               </div>
             </section>
+
+            <section
+              className="border-destructive/25 bg-card/65 rounded-2xl border p-6 shadow-sm backdrop-blur-sm sm:p-7"
+              aria-labelledby="delete-account-heading"
+            >
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex min-w-0 items-start gap-4">
+                  <span className="bg-destructive/10 text-destructive mt-0.5 grid size-10 shrink-0 place-items-center rounded-xl">
+                    <Trash2 aria-hidden="true" className="size-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-destructive/80 text-xs font-semibold tracking-[0.12em] uppercase">
+                      Permanent action
+                    </p>
+                    <h2 className="mt-1 text-lg font-semibold" id="delete-account-heading">
+                      Delete account
+                    </h2>
+                    <p className="text-muted-foreground mt-2 max-w-2xl text-sm leading-6">
+                      Removes your sign-in details, profile information, invitations, and workspace
+                      access. Feature-toggle history remains attributed to an anonymized account.
+                      Workspaces need another admin before deletion.
+                    </p>
+                  </div>
+                </div>
+                <Button
+                  className="w-full sm:w-auto sm:shrink-0"
+                  onClick={() => {
+                    setDeleteConfirmationEmail("");
+                    setDeletePassword("");
+                    deleteMutation.reset();
+                    setIsDeleteDialogOpen(true);
+                  }}
+                  variant="destructive"
+                >
+                  Delete my account
+                </Button>
+              </div>
+            </section>
           </div>
         </section>
       </main>
@@ -383,6 +432,63 @@ export function AccountSettings({ user }: AccountSettingsProps) {
               variant="destructive"
             >
               {deactivateMutation.isPending ? "Deactivating…" : "Deactivate account"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete your account permanently?</DialogTitle>
+            <DialogDescription>
+              Your profile and sign-in credentials will be erased, and you’ll be removed from all
+              workspaces. Feature-toggle ownership and audit history will remain with an anonymized
+              user record. This cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <label className="text-sm font-medium" htmlFor="delete-confirmation-email">
+            Enter {user.email} to confirm
+          </label>
+          <Input
+            autoComplete="email"
+            id="delete-confirmation-email"
+            onChange={(event) => setDeleteConfirmationEmail(event.target.value)}
+            value={deleteConfirmationEmail}
+          />
+          <label className="text-sm font-medium" htmlFor="delete-confirmation-password">
+            Current password
+          </label>
+          <PasswordInput
+            autoComplete="current-password"
+            id="delete-confirmation-password"
+            onChange={(event) => setDeletePassword(event.target.value)}
+            value={deletePassword}
+          />
+          {deleteMutation.isError && (
+            <p className="text-destructive text-sm" role="alert">
+              {deleteMutation.error.message}
+            </p>
+          )}
+          <DialogFooter>
+            <Button onClick={() => setIsDeleteDialogOpen(false)} type="button" variant="outline">
+              Cancel
+            </Button>
+            <Button
+              disabled={
+                deleteConfirmationEmail !== user.email ||
+                !deletePassword ||
+                deleteMutation.isPending
+              }
+              onClick={() =>
+                deleteMutation.mutate({
+                  email: deleteConfirmationEmail,
+                  currentPassword: deletePassword,
+                })
+              }
+              type="button"
+              variant="destructive"
+            >
+              {deleteMutation.isPending ? "Deleting…" : "Delete account"}
             </Button>
           </DialogFooter>
         </DialogContent>
