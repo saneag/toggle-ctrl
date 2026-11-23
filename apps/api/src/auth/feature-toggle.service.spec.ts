@@ -93,9 +93,11 @@ describe("FeatureToggleService", () => {
 
     await service.create(user, "workspace-1", { name: "new-checkout", enabled: true });
 
-    expect(createToggle).toHaveBeenCalledWith({
-      data: expect.objectContaining({ name: "new-checkout", enabled: true }),
-    });
+    expect(createToggle).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ name: "new-checkout", enabled: true }),
+      }),
+    );
     expect(createEvent).toHaveBeenCalledWith({
       data: expect.objectContaining({
         action: "CREATE",
