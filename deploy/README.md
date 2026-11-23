@@ -2,6 +2,8 @@
 
 For the shared standalone PostgreSQL layout with Friendo, see
 [the home server setup](HOME-SERVER.md).
+For a clean Ubuntu installation or recovery without ChatGPT, use
+[the step-by-step guide](SETUP-FROM-ZERO.md) and [command cheatsheet](COMMANDS-CHEATSHEET.md).
 
 Toggle Ctrl uses your existing PostgreSQL database. It does not create or replace
 PostgreSQL. Docker builds the API and web app; a one-shot container applies Prisma

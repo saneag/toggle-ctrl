@@ -9,6 +9,8 @@ Toggle Ctrl is a feature flag application for controlling the rollout of feature
 ## Getting started
 
 For the Ubuntu home server, see [Docker deployment and the ~/bin helper](deploy/README.md).
+For an independent rebuild, use [the beginner setup guide](deploy/SETUP-FROM-ZERO.md)
+and [the command cheatsheet](deploy/COMMANDS-CHEATSHEET.md).
 
 ### Requirements
 
