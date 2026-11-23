@@ -12,6 +12,10 @@ services:
     restart: "no"
 
   api:
+    networks:
+      default:
+        aliases:
+          - toggle-ctrl-api
     build:
       context: .
       target: api

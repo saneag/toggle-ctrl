@@ -4,6 +4,8 @@ The server is `alex@192.168.0.16`. PostgreSQL 18 runs directly on Ubuntu on port
 5432; deployed web/API processes remain in Docker. Both Docker deployments join
 the external `home-apps` bridge network. PostgreSQL permits the production roles
 from that network and the development roles from `192.168.0.0/24`.
+Each Nginx proxy uses a unique backend alias (`toggle-ctrl-api` or `friendo-api`)
+so the two Compose services named `api` cannot route requests to each other.
 
 | Database           | Role               | Used by                             |
 | ------------------ | ------------------ | ----------------------------------- |
