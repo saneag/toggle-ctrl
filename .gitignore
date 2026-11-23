@@ -18,5 +18,6 @@ compose.override.yaml
 .claude/
 .windsurf/
 skills-lock.json
+__pycache__/
 server/dist
 public/dist

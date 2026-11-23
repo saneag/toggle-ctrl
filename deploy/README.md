@@ -98,6 +98,7 @@ and before updates that change its schema.
 ```bash
 ~/bin/start-toggle-ctrl          # Build, apply pending migrations, start
 ~/bin/start-toggle-ctrl status
+~/bin/start-toggle-ctrl tunnel   # Start a fresh public URL without rebuilding
 ~/bin/start-toggle-ctrl logs     # Ctrl+C exits logs; app keeps running
 ~/bin/start-toggle-ctrl restart
 ~/bin/start-toggle-ctrl stop     # Database remains untouched
@@ -114,16 +115,26 @@ It prints the selected ports and saves them in `.deploy-ports`. Status, stop, an
 logs reuse that selection. Containers retain their ports across server reboots.
 Starting again may select new ports if others have occupied the old ones.
 
-By default both ports bind to loopback. Point your HTTPS tunnel/reverse proxy to
-the printed website port, e.g. `http://127.0.0.1:5002`. Use a separate hostname from
-Friendo, serve at the hostname root, and keep `COOKIE_SECURE=true`.
-For a temporary Quick Tunnel, run `cloudflared tunnel --url http://127.0.0.1:5002`,
-set `WEB_APP_URL` to its printed HTTPS URL, and rerun the helper. Keep the tunnel
-process running. Its public URL changes when the tunnel restarts.
+When `cloudflared` is installed, start/restart also launches a separate Cloudflare
+Quick Tunnel in `toggle-ctrl-tunnel.service` and prints `Public website: https://...`.
+It waits for the URL, sets `WEB_APP_URL` to that origin, enables secure cookies,
+binds the website to loopback, and recreates the API/web containers with these
+settings. Use the printed HTTPS URL to sign in. The tunnel survives SSH logout;
+its temporary URL changes when restarted. `status` prints the current URL, `tunnel`
+starts a new URL without rebuilding, and `stop` stops both the app and its tunnel.
+Run the helper again after a server reboot or an unexpected tunnel restart to
+refresh the public origin. The server needs sudo access for systemd; the helper
+prompts when required.
+
+If you use an existing named tunnel/reverse proxy or want LAN-only startup, run
+`TOGGLE_CTRL_TUNNEL=off ~/bin/start-toggle-ctrl`. This skips automatic tunnel
+configuration. Point your HTTPS proxy to the selected website port, for example
+`http://127.0.0.1:5002`, and configure `WEB_APP_URL`/cookies yourself.
 
 For direct LAN HTTP testing, set `BIND_ADDRESS=0.0.0.0`,
 `WEB_APP_URL=http://YOUR_SERVER_LAN_IP:5002`, and `COOKIE_SECURE=false`.
-Use the actual selected port. Use HTTPS and secure cookies for public access.
+Use the actual selected port and `TOGGLE_CTRL_TUNNEL=off` when starting. Use HTTPS
+and secure cookies for public access.
 
 ## Verify and update
 
@@ -138,6 +149,10 @@ curl -I http://127.0.0.1:5002/
 Then open the configured website and verify sign-in, workspace creation, and
 invitation email delivery. API docs are at `/api/docs`. The root API check verifies
 HTTP availability; sign-in/workspace operations verify real database use.
+
+The isolated tunnel-helper tests run on Ubuntu with
+`python3 -m unittest discover -s scripts/tests -v`; they do not start services or
+modify the deployed environment.
 
 Pull/copy new source and rerun the helper to deploy updates. If migration/startup
 fails, inspect logs and fix the reported error before retrying. Containers restart

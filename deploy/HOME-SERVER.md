@@ -80,17 +80,21 @@ reset commands delete data for all devices sharing that development database.
 ~/bin/start-toggle-ctrl
 ~/bin/start-toggle-ctrl status
 ~/bin/start-toggle-ctrl db-status
+~/bin/start-toggle-ctrl tunnel
 ~/bin/start-toggle-ctrl logs
 ~/bin/start-friendo
 ```
 
 Toggle Ctrl starts on the next free pair from 5001, normally website 5002/API 5003.
 Friendo's existing launcher prefers website 5000/API 5001 and preserves its existing
-Cloudflare behavior. Toggle Ctrl initially uses `http://192.168.0.16:5002` for LAN
-testing, with `COOKIE_SECURE=false`. If its selected port changes, update
-`WEB_APP_URL` to match and rerun the helper. For public access, configure an HTTPS
-tunnel, set the exact public `WEB_APP_URL`, `COOKIE_SECURE=true`, and bind the web
-port to `127.0.0.1` if LAN access is no longer needed.
+Cloudflare behavior. Toggle Ctrl's helper starts its own Cloudflare Quick Tunnel
+when cloudflared is installed, prints the public URL, configures that origin and
+secure cookies, and binds the website to loopback. Use the printed HTTPS address
+to sign in. Its temporary URL changes on start/restart; `status` prints the current
+URL. Use `tunnel` to get a fresh URL without rebuilding. The tunnel survives SSH
+logout; run the helper again after a server reboot or unexpected tunnel restart.
+To keep manual LAN or named-tunnel settings instead, start with
+`TOGGLE_CTRL_TUNNEL=off ~/bin/start-toggle-ctrl`.
 
 Verify login, workspace operations, Friendo records, and uploaded images in the
 browser. HTTP root checks alone do not exercise all application behavior.
