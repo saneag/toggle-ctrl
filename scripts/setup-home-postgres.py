@@ -189,6 +189,7 @@ host all toggle_ctrl_prod,friendo_prod ::/0 reject
     config = HOME / '.config/home-apps'
     config.mkdir(parents=True, exist_ok=True, mode=0o700)
     user = pwd.getpwnam('alex')
+    os.chown(HOME / '.config', user.pw_uid, user.pw_gid)
     os.chown(config, user.pw_uid, user.pw_gid)
     private_write(config / 'databases.json', json.dumps(credentials, indent=2) + '\n', user)
     shutil.copy2(TOGGLE / 'deploy/compose.home-server.yaml', TOGGLE / 'compose.override.yaml')
