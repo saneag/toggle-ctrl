@@ -6,21 +6,21 @@ Unless a heading says **Windows**, run commands after connecting to Ubuntu.
 
 ## Everyday commands
 
-| Run this                            | What it does                                                                           |
-| ----------------------------------- | -------------------------------------------------------------------------------------- |
-| `ssh home-server`                   | Windows: connect using the saved SSH key/address                                       |
-| `ssh alex@192.168.0.16`             | Windows: connect directly if the shortcut is not configured                            |
-| `exit`                              | Leave the SSH session; running apps stay running                                       |
-| `~/bin/start-friendo`               | Start/update existing Friendo images and print a new tunnel URL; does not build images |
-| `~/bin/start-toggle-ctrl`           | Build, migrate, start Toggle Ctrl, and print a new tunnel URL                          |
-| `~/bin/start-toggle-ctrl status`    | Show its containers and current public URL                                             |
-| `~/bin/start-toggle-ctrl tunnel`    | Get a new public URL without rebuilding                                                |
-| `~/bin/start-toggle-ctrl logs`      | Follow Toggle Ctrl logs                                                                |
-| `~/bin/start-toggle-ctrl db-status` | Check production database/migration status without applying migrations                 |
-| `~/bin/start-toggle-ctrl restart`   | Rebuild/start Toggle Ctrl and refresh its tunnel                                       |
-| `~/bin/start-toggle-ctrl stop`      | Stop Toggle Ctrl and its tunnel; keep data                                             |
-| `sudo docker ps`                    | List running containers and published ports                                            |
-| `sudo docker ps -a`                 | Include stopped containers and completed migration jobs                                |
+| Run this                            | What it does                                                           |
+| ----------------------------------- | ---------------------------------------------------------------------- |
+| `ssh home-server`                   | Windows: connect using the saved SSH key/address                       |
+| `ssh alex@192.168.0.16`             | Windows: connect directly if the shortcut is not configured            |
+| `exit`                              | Leave the SSH session; running apps stay running                       |
+| `~/bin/start-friendo`               | Build, migrate, start Friendo, and print a new tunnel URL              |
+| `~/bin/start-toggle-ctrl`           | Build, migrate, start Toggle Ctrl, and print a new tunnel URL          |
+| `~/bin/start-toggle-ctrl status`    | Show its containers and current public URL                             |
+| `~/bin/start-toggle-ctrl tunnel`    | Get a new public URL without rebuilding                                |
+| `~/bin/start-toggle-ctrl logs`      | Follow Toggle Ctrl logs                                                |
+| `~/bin/start-toggle-ctrl db-status` | Check production database/migration status without applying migrations |
+| `~/bin/start-toggle-ctrl restart`   | Rebuild/start Toggle Ctrl and refresh its tunnel                       |
+| `~/bin/start-toggle-ctrl stop`      | Stop Toggle Ctrl and its tunnel; keep data                             |
+| `sudo docker ps`                    | List running containers and published ports                            |
+| `sudo docker ps -a`                 | Include stopped containers and completed migration jobs                |
 
 Run Friendo first after reboot, then Toggle Ctrl. Normal ports are 5000/5001 and
 5002/5003, but the scripts select free pairs and print the actual values.
@@ -85,13 +85,7 @@ git status --short
 git pull --ff-only
 # Download the matching frontend version.
 git -C ../proiect-de-curs-frontend pull --ff-only
-# Build all images while the old app is still serving.
-sudo docker compose build migrate api frontend
-# Stop writes before applying the new schema.
-sudo docker compose stop api frontend
-# Apply committed production migrations; -T avoids interactive input handling.
-sudo docker compose run --rm -T migrate
-# Start the new images and print the public URL.
+# Build all images, stop writes, apply migrations, start, and print the public URL.
 ~/bin/start-friendo
 ```
 

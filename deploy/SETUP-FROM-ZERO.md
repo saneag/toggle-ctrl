@@ -366,11 +366,7 @@ on this small server; later builds reuse downloaded dependencies.
 cd ~/proiect-de-curs/proiect-de-curs-backend
 # Validate required variables and Compose structure without printing secrets.
 sudo docker compose config --quiet
-# Build the migration, API, and frontend images.
-sudo docker compose build migrate api frontend
-# Apply committed schema migrations to friendo-prod.
-sudo docker compose run --rm -T migrate
-# Start Friendo first, normally on 5000/5001, and print its public URL.
+# Build, migrate, and start Friendo first, normally on 5000/5001; print its public URL.
 ~/bin/start-friendo
 # Start Toggle Ctrl, apply its production migrations, and print its public URL.
 ~/bin/start-toggle-ctrl
