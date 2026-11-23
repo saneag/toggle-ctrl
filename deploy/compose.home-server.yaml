@@ -1,0 +1,5 @@
+# Copy to compose.override.yaml in the server checkout after creating home-apps.
+networks:
+  default:
+    external: true
+    name: home-apps
