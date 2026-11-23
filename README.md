@@ -8,6 +8,8 @@ Toggle Ctrl is a feature flag application for controlling the rollout of feature
 
 ## Getting started
 
+For the Ubuntu home server, see [Docker deployment and the ~/bin helper](deploy/README.md).
+
 ### Requirements
 
 - Node.js 24.20.0 or newer
@@ -105,4 +107,4 @@ For API-specific commands, run them through the workspace filter, for example `p
 
 ## Environment files
 
-Only the API currently has an environment file template: `apps/api/.env.example`. Copy it to `apps/api/.env` and set `DATABASE_URL` as described above. Keep local secrets in the ignored `.env` file; commit changes to the example template only when documenting non-secret defaults.
+Local development uses `apps/api/.env.example`; copy it to `apps/api/.env` and set `DATABASE_URL` as described above. Docker deployment uses the root `.env.example` instead. Keep secrets in ignored `.env` files.

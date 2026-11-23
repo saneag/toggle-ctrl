@@ -9,6 +9,9 @@ apps/api/src/generated/prisma
 dist-ssr
 *.local
 .env
+.deploy-ports
+.deploy.lock
+compose.override.yaml
 .cache
 .playwright-mcp/
 .agents/

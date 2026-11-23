@@ -48,7 +48,9 @@ export function readSessionCookie(request: Request): string | undefined {
 }
 
 function sessionCookieAttributes(maxAge: number): string {
-  const secure = process.env.COOKIE_SECURE === "true" || process.env.NODE_ENV === "production";
+  const secure = process.env.COOKIE_SECURE
+    ? process.env.COOKIE_SECURE === "true"
+    : process.env.NODE_ENV === "production";
   const sameSite = process.env.COOKIE_SAME_SITE ?? "lax";
   const domain = process.env.COOKIE_DOMAIN ? `; Domain=${process.env.COOKIE_DOMAIN}` : "";
   return `Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${maxAge}${secure ? "; Secure" : ""}${domain}`;

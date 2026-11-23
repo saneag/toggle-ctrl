@@ -1,0 +1,12 @@
+**/node_modules
+**/dist
+**/.env
+**/.env.*
+**/coverage
+**/*.tsbuildinfo
+**/src/generated/prisma
+.git
+.turbo
+.playwright-mcp
+.agents
+assets
