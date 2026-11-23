@@ -11,8 +11,8 @@ Unless a heading says **Windows**, run commands after connecting to Ubuntu.
 | `ssh home-server`                   | Windows: connect using the saved SSH key/address                       |
 | `ssh alex@192.168.0.16`             | Windows: connect directly if the shortcut is not configured            |
 | `exit`                              | Leave the SSH session; running apps stay running                       |
-| `~/bin/start-friendo`               | Build, migrate, start Friendo, and print a new tunnel URL              |
-| `~/bin/start-toggle-ctrl`           | Build, migrate, start Toggle Ctrl, and print a new tunnel URL          |
+| `~/bin/start-friendo`               | Pull, build, migrate, start Friendo, and print a new tunnel URL        |
+| `~/bin/start-toggle-ctrl`           | Pull, build, migrate, start Toggle Ctrl, and print a new tunnel URL    |
 | `~/bin/start-toggle-ctrl status`    | Show its containers and current public URL                             |
 | `~/bin/start-toggle-ctrl tunnel`    | Get a new public URL without rebuilding                                |
 | `~/bin/start-toggle-ctrl logs`      | Follow Toggle Ctrl logs                                                |
@@ -56,36 +56,24 @@ If the service is inactive, that URL may no longer work; start the helper again.
 
 ## Deploy code updates
 
-Back up first when database migrations are involved. Keep Friendo frontend/backend
-versions together. If `git pull` reports local changes, inspect them; do not use
-`git reset --hard` to make the message disappear.
+Push your changes to GitHub, then run the matching command below on Ubuntu.
+Each launcher pulls its configured upstream branch with `git pull --ff-only`
+before building. Friendo pulls both repositories. Tracked local changes or a
+failed pull stop deployment before the running app is stopped. Private ignored
+`.env` files are retained. Back up first when database migrations are involved.
+Do not use `git reset --hard` to make a local-change error disappear.
 
 ### Toggle Ctrl
 
 ```bash
-# Enter its checkout.
-cd ~/toggle-ctrl
-# Inspect local changes before pulling.
-git status --short
-# Download committed changes without creating a merge commit.
-git pull --ff-only
-# Refresh the installed ~/bin copy when the launcher changed.
-install -m 755 scripts/start-toggle-ctrl.sh ~/bin/start-toggle-ctrl
-# Build, migrate, deploy, and print the new HTTPS URL.
+# Pull, build, migrate, deploy, and print the new HTTPS URL.
 ~/bin/start-toggle-ctrl
 ```
 
 ### Friendo
 
 ```bash
-# Enter the backend checkout.
-cd ~/proiect-de-curs/proiect-de-curs-backend
-# Inspect local changes, then download the matching backend version.
-git status --short
-git pull --ff-only
-# Download the matching frontend version.
-git -C ../proiect-de-curs-frontend pull --ff-only
-# Build all images, stop writes, apply migrations, start, and print the public URL.
+# Pull both repositories, build, migrate, start, and print the public URL.
 ~/bin/start-friendo
 ```
 

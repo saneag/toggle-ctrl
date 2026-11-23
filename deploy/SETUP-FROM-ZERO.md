@@ -345,7 +345,7 @@ cloudflared --version
 # Create your personal commands folder.
 mkdir -p ~/bin
 # Install Toggle Ctrl's executable shortcut; it calls scripts in its checkout.
-install -m 755 ~/toggle-ctrl/scripts/start-toggle-ctrl.sh ~/bin/start-toggle-ctrl
+install -m 755 ~/toggle-ctrl/scripts/start-toggle-ctrl-wrapper.sh ~/bin/start-toggle-ctrl
 # Create Friendo's shortcut pointing to its existing launcher.
 cat > ~/bin/start-friendo <<'SH'
 #!/usr/bin/env bash

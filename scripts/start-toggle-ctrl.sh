@@ -16,6 +16,18 @@ cd -- "$APP_DIR"
 # Serialize updates and port selection for this checkout.
 exec 9>.deploy.lock
 flock -n 9 || { echo "Another Toggle Ctrl command is running." >&2; exit 1; }
+if [[ "$action" == start || "$action" == restart ]]; then
+    git_cmd=(git -C "$APP_DIR")
+    repo_owner=$(stat -c %u "$APP_DIR")
+    if (( EUID == 0 && repo_owner != 0 )); then
+        git_cmd=(runuser -u "$(stat -c %U "$APP_DIR")" -- "${git_cmd[@]}")
+    fi
+    if [[ -n "$("${git_cmd[@]}" status --porcelain --untracked-files=no)" ]]; then
+        echo "Commit or restore tracked local changes before deploying: $APP_DIR" >&2
+        exit 1
+    fi
+    GIT_TERMINAL_PROMPT=0 "${git_cmd[@]}" pull --ff-only
+fi
 if [[ -f .deploy-ports ]]; then
     read -r WEB_PORT API_PORT < .deploy-ports
     [[ "$WEB_PORT" =~ ^[0-9]+$ && "$API_PORT" =~ ^[0-9]+$ ]] || exit 1

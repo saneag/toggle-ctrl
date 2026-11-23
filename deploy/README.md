@@ -86,7 +86,7 @@ No host Node.js/pnpm installation is needed.
 
 ```bash
 mkdir -p ~/bin
-install -m 755 ~/toggle-ctrl/scripts/start-toggle-ctrl.sh ~/bin/start-toggle-ctrl
+install -m 755 ~/toggle-ctrl/scripts/start-toggle-ctrl-wrapper.sh ~/bin/start-toggle-ctrl
 ~/bin/start-toggle-ctrl db-status
 ```
 
@@ -116,6 +116,11 @@ port reservations. With Friendo on 5000/5001 it selects 5002 (web) and 5003 (API
 It prints the selected ports and saves them in `.deploy-ports`. Status, stop, and
 logs reuse that selection. Containers retain their ports across server reboots.
 Starting again may select new ports if others have occupied the old ones.
+
+Before building, start/restart pulls the checkout's configured upstream branch
+with `git pull --ff-only`. Tracked local changes or pull failures stop deployment
+before any containers are stopped. Status, logs, stop, and tunnel commands do not
+pull code. The installed ~/bin wrapper always uses the launcher in the checkout.
 
 When `cloudflared` is installed, start/restart also launches a separate Cloudflare
 Quick Tunnel in `toggle-ctrl-tunnel.service` and prints `Public website: https://...`.
@@ -156,7 +161,7 @@ The isolated tunnel-helper tests run on Ubuntu with
 `python3 -m unittest discover -s scripts/tests -v`; they do not start services or
 modify the deployed environment.
 
-Pull/copy new source and rerun the helper to deploy updates. If migration/startup
+Push new source to GitHub and rerun the helper to pull and deploy updates. If migration/startup
 fails, inspect logs and fix the reported error before retrying. Containers restart
 automatically after Docker/server restarts. Enable Docker at boot if necessary:
 `sudo systemctl enable --now docker`. Keep backups of the existing database using

@@ -259,7 +259,7 @@ def cutover():
         if path.exists():
             os.chown(path, user.pw_uid, user.pw_gid)
     helper = HOME / 'bin/start-toggle-ctrl'
-    shutil.copy2(TOGGLE / 'scripts/start-toggle-ctrl.sh', helper)
+    shutil.copy2(TOGGLE / 'scripts/start-toggle-ctrl-wrapper.sh', helper)
     helper.chmod(0o755)
     os.chown(helper, user.pw_uid, user.pw_gid)
     state['phase'] = 'deployed'
